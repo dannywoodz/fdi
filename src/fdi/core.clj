@@ -16,10 +16,16 @@
         error-channel (chan)
         filename-channel (chan)
         fingerprint-channel (chan)
+        finished-channel (chan)
         directory-scanner (scanner/scan base-directory filename-channel)
         error-reporter (error/start error-channel fingerprint-generation-failed)
         cache-builder (builder/start filename-channel fingerprint-channel error-channel)
-        analyser (analyser/start fingerprint-channel duplicate-identified)]))
+        analyser (analyser/start fingerprint-channel duplicate-identified finished-channel)]
+    (<!! finished-channel)
+    (println "Terminating")))
+
+
+
 
 
 

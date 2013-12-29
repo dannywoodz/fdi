@@ -15,6 +15,8 @@
    (loop [directories [(File. base-directory)]]
      (let [{subdirs true files false}
            (group-by #(.isDirectory %) (mapcat #(.listFiles %) directories))]
-       (doseq [file files] (>! filename-channel (.getCanonicalPath file)))
+       (doseq [file files] (if (.endsWith (.toLowerCase (.getName file))
+                                          ".jpg")
+                             (>! filename-channel (.getCanonicalPath file))))
        (if-not (empty? subdirs) (recur subdirs))))
    (>! filename-channel :stop)))
