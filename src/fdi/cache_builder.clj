@@ -44,7 +44,7 @@ with no arguments if an error occurs.  Should never itself throw an error."
 The first argument, unused, is the state of the agent when the call is made.
 It is otherwise identical to generate-fingerprint, which it calls."
   (if (= filename :stop)
-    (after 1000 (>!! feedback-channel :stop))
+    (after 5000 (>!! feedback-channel :stop))
     (generate-fingerprint filename feedback-channel)))
 
 (defn start [filename-channel fingerprint-channel error-channel]
@@ -67,9 +67,10 @@ It is otherwise identical to generate-fingerprint, which it calls."
         (= channel feedback-channel)
         (cond
          (= message :stop)
-         (do (>! fingerprint-channel :stop)
-             (>! error-channel :stop)
-             (.shutdown executor))
+         (do
+           (.shutdown executor)
+           (>! fingerprint-channel :stop)
+           (>! error-channel :stop))
          :default
          (let [{error :error} message]
            (if error

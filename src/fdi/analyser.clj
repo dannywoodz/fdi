@@ -1,7 +1,7 @@
 (ns fdi.analyser
   (:require [clojure.core.async :as async :refer :all]))
 
-(defn- similar? [[first-print _] [second-print _]]
+(defn- similar? [{first-print :fingerprint} {second-print :fingerprint}]
   (loop [f first-print
          s second-print
          error (* 5 (Math/abs (- (count first-print) (count second-print))))]
@@ -23,32 +23,38 @@
                (conj duplicates (first prints))
                duplicates)))))
 
-(defn- find-duplicates [prints duplicates-handler]
-  (loop [p prints
-         duplicates '()]
-    (if (empty? p)
-      duplicates
-      (let [dups (duplicates-of (first p) (rest p))]
-        (recur
-         (remove #(contains? dups %) (rest p))
-         (if (empty? dups)
-           duplicates
-           (cons (cons (:filename (second (first p))) (clojure.core/map (comp :filename second) dups)) duplicates)))))))
+(defn- spawn-channels [fingerprints]
+  (loop [prints fingerprints
+         answers []]
+    (if (empty? prints)
+      answers
+      (recur
+       (rest prints)
+       (conj answers
+             (go
+              (let [dups (duplicates-of (first prints) (rest prints))]
+                (if (empty? dups)
+                  dups
+                  (cons (first prints) dups)))))))))
 
-(defn start [fingerprint-channel duplicate-handler finished-channel]
+(defn- find-duplicates [fingerprints]
+  (loop [channels (spawn-channels fingerprints)
+         results []]
+    (if (empty? channels)
+      results
+      (recur
+       (rest channels)
+       (conj results (<!! (first channels)))))))
+
+(defn start [analyser-channel duplicate-handler finished-channel]
   (go
    (println "Starting analyser")
-   (loop [fingerprint (<! fingerprint-channel)
-          prints {}]
-     (if (identical? fingerprint :stop)
-       (do
-         (doseq [duplicate-set (find-duplicates prints duplicate-handler)]
-				   (println "DUPLICATES:" duplicate-set))
-         (>! finished-channel :stop)
-         (println "Stopped analyser"))
-       (let [{:keys [fingerprint filename] :as print} fingerprint]
-         (recur (<! fingerprint-channel)
-                (assoc prints fingerprint print)))))))
+   (let [prints (<! analyser-channel)
+         duplicates (find-duplicates prints)]
+     (doseq [dup (remove empty? duplicates)] (duplicate-handler dup))
+     (>! finished-channel :stop))))
+
+
 
 
 
