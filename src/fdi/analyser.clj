@@ -1,10 +1,10 @@
 (ns fdi.analyser
   (:require [clojure.core.async :as async :refer :all]))
 
-(defn- similar? [{first-print :fingerprint} {second-print :fingerprint}]
+(defn- similar? [[first-print _] [second-print _]]
   (loop [f first-print
          s second-print
-         error 0]
+         error (* 5 (Math/abs (- (count first-print) (count second-print))))]
     (if (empty? f)
       true
       (let [new-error (+ error (Math/abs (- (first f) (first s))))]
@@ -33,7 +33,7 @@
          (remove #(contains? dups %) (rest p))
          (if (empty? dups)
            duplicates
-           (cons dups duplicates)))))))
+           (cons (cons (:filename (second (first p))) (clojure.core/map (comp :filename second) dups)) duplicates)))))))
 
 (defn start [fingerprint-channel duplicate-handler finished-channel]
   (go
@@ -42,7 +42,8 @@
           prints {}]
      (if (identical? fingerprint :stop)
        (do
-         (find-duplicates prints duplicate-handler)
+         (doseq [duplicate-set (find-duplicates prints duplicate-handler)]
+				   (println "DUPLICATES:" duplicate-set))
          (>! finished-channel :stop)
          (println "Stopped analyser"))
        (let [{:keys [fingerprint filename] :as print} fingerprint]
