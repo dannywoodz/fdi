@@ -37,6 +37,12 @@ is written to both the error and processing queues.
 The code in fdi/error.clj receives the filenames of images for which a
 fingerprint could not be computed.
 
+## Collator
+
+fdi/collator.clj takes generated fingerprints and accumulates them until
+it receives the keyword :stop, at which point all fingerpints
+are sent to an output channel.
+
 ## Cache Analyser
 
 fdi/analyser.clj reads from an input queue to which key/value pairs mapping
