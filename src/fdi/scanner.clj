@@ -18,5 +18,6 @@
        (doseq [file files] (if (.endsWith (.toLowerCase (.getName file))
                                           ".jpg")
                              (>! filename-channel (.getCanonicalPath file))))
-       (if-not (empty? subdirs) (recur subdirs))))
+       (let [visible-directories (remove #(.startsWith (.getName %) ".") subdirs)]
+        (if-not (empty? visible-directories) (recur visible-directories)))))
    (>! filename-channel :stop)))
