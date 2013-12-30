@@ -8,4 +8,5 @@
      (println "Error reporter handling" error)
      (when-not (identical? error :stop)
        (error-callback error)
-       (recur (<! source-channel))))))
+       (recur (<! source-channel)))
+     (println "Stopped error reporter"))))

@@ -40,13 +40,11 @@
    (println "Starting analyser")
    (loop [fingerprint (<! fingerprint-channel)
           prints {}]
-     (println "Analysing" fingerprint)
      (if (identical? fingerprint :stop)
        (do
-         (println "Checking for duplicates")
          (find-duplicates prints duplicate-handler)
-         (println "Done checking for duplicates")
-         (>! finished-channel :stop))
+         (>! finished-channel :stop)
+         (println "Stopped analyser"))
        (let [{:keys [fingerprint filename] :as print} fingerprint]
          (recur (<! fingerprint-channel)
                 (assoc prints fingerprint print)))))))

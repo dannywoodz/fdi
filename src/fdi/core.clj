@@ -22,7 +22,23 @@
         cache-builder (builder/start filename-channel fingerprint-channel error-channel)
         analyser (analyser/start fingerprint-channel duplicate-identified finished-channel)]
     (<!! finished-channel)
-    (println "Terminating")))
+    ;; (go
+    ;;  (loop [open-channels #{error-channel filename-channel fingerprint-channel finished-channel}]
+    ;;    (let [[message channel] (alts! (vec open-channels))]
+    ;;      (cond
+    ;;       (identical? channel error-channel)
+    ;;       (println "Read" message "from the error channel")
+    ;;       (identical? channel filename-channel)
+    ;;       (println "Read" message "from the filename channel")
+    ;;       (identical? channel fingerprint-channel)
+    ;;       (println "Read" message "from the fingerprint channel")
+    ;;       (identical? channel finished-channel)
+    ;;       (println "Read" message "from the finished channel"))
+    ;;      (if-not (empty? open-channels)
+    ;;        (recur (disj open-channels channel))))))
+    ))
+
+
 
 
 
