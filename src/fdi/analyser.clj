@@ -2,16 +2,24 @@
   (:require [clojure.core.async :as async :refer :all]))
 
 (defn- similar? [{first-print :fingerprint} {second-print :fingerprint}]
-  (loop [f first-print
-         s second-print
-         error (* 5 (Math/abs (- (count first-print) (count second-print))))]
-    (if (empty? f)
-      true
-      (let [new-error (+ error (Math/abs (- (first f) (first s))))]
-        (if-not (> new-error (* 5 (count first-print)))
-                (recur (rest f)
-                       (rest s)
-                       new-error))))))
+  (let [valid-length (min (count first-print)
+                          (count second-print))
+        longest-length (max (count first-print)
+                            (count second-print))]
+    (loop [f first-print
+           s second-print
+           error (* 5 (Math/abs (- longest-length
+                                   valid-length)))
+           chars-to-check valid-length]
+      (if (zero? chars-to-check)
+        (< error (* 5 longest-length))
+        (let [new-error (+ error (Math/abs (- (first f) (first s))))]
+          (if (> new-error (* 5 valid-length))
+            false
+            (recur (rest f)
+                   (rest s)
+                   new-error
+                   (dec chars-to-check))))))))
 
 (defn- duplicates-of [ref-print all-prints]
   (loop [prints all-prints
