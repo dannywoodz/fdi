@@ -3,7 +3,33 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
+#include <wand/MagickWand.h>
+
+
+JNIEXPORT void JNICALL Java_fdi_FileID_init(JNIEnv *env, jclass type)
+{
+  MagickWandGenesis();
+}
+
+static void throw_ioexception(JNIEnv *env, const char *fmt, ...)
+{
+  char *message = NULL;
+  jclass ioException = (*env)->FindClass(env, "java/io/IOException");
+  if (!ioException)
+  {
+    fprintf(stderr, "Couldn't find java.io.IOException.  JVM is borked.  Terminating\n");
+    exit(EXIT_FAILURE);
+  }
+  va_list args;
+  va_start(args, fmt);
+  vasprintf(&message, fmt, args);
+  va_end(args);
+  (*env)->ThrowNew(env, ioException, message);
+  free(message);
+}
 
 JNIEXPORT jlongArray JNICALL Java_fdi_FileID_id(JNIEnv *env, jclass type, jstring jfilename)
 {
@@ -16,16 +42,8 @@ JNIEXPORT jlongArray JNICALL Java_fdi_FileID_id(JNIEnv *env, jclass type, jstrin
   }
   else
   {
-    char errorMessage[1024];
-    const char *fmt = "error opening %s";
-    snprintf(errorMessage, sizeof(errorMessage) - strlen(fmt), fmt, filename);
-    jclass ioException = (*env)->FindClass(env, "java/io/IOException");
-    if(!ioException)
-    {
-      fprintf(stderr, "Fatal error.  Unable to locate java.io.IOException.  Terminating");
-      exit(EXIT_FAILURE);
-    }
-    (*env)->ThrowNew(env, ioException, errorMessage);
+    throw_ioexception(env, "Error opening %s", filename);
+    (*env)->ReleaseStringUTFChars(env, jfilename, filename);
     return NULL;
   }
 
@@ -39,4 +57,39 @@ JNIEXPORT jlongArray JNICALL Java_fdi_FileID_id(JNIEnv *env, jclass type, jstrin
   (*env)->SetLongArrayRegion(env, fields, 0, 3, nativeFields);
 
   return fields;
+}
+
+JNIEXPORT jbyteArray JNICALL Java_fdi_FileID_fingerprint(JNIEnv *env, jclass type, jstring jfilename)
+{
+  const char *filename = (*env)->GetStringUTFChars(env, jfilename, NULL);
+  MagickWand *wand = NewMagickWand();
+
+  if (MagickReadImage(wand, filename) == MagickFalse)
+  {
+    throw_ioexception(env, "Failed to open %s", filename);
+    (*env)->ReleaseStringUTFChars(env, jfilename, filename);
+    return NULL;
+  }
+
+  MagickResetIterator(wand);
+  if (MagickNextImage(wand) == MagickFalse)
+  {
+    throw_ioexception(env, "Failed to find image in %s", filename);
+    (*env)->ReleaseStringUTFChars(env, jfilename, filename);
+    return NULL;
+  }
+
+  (*env)->ReleaseStringUTFChars(env, jfilename, filename);
+
+  MagickNormalizeImage(wand);
+  MagickScaleImage(wand, 4, 4);
+  MagickSetImageFormat(wand, "rgb");
+  size_t length;
+  unsigned char *blob = MagickGetImageBlob(wand, &length);
+  jbyteArray jBlob = (*env)->NewByteArray(env, length);
+  (*env)->SetByteArrayRegion(env, jBlob, 0, length, (jbyte*)blob);
+  MagickRelinquishMemory(blob);
+  DestroyMagickWand(wand);
+
+  return jBlob;
 }

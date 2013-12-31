@@ -9,10 +9,26 @@ extern "C" {
 #endif
 /*
  * Class:     fdi_FileID
+ * Method:    init
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_fdi_FileID_init
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     fdi_FileID
  * Method:    id
  * Signature: (Ljava/lang/String;)[J
  */
 JNIEXPORT jlongArray JNICALL Java_fdi_FileID_id
+  (JNIEnv *, jclass, jstring);
+
+/*
+ * Class:     fdi_FileID
+ * Method:    fingerprint
+ * Signature: (Ljava/lang/String;)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_fdi_FileID_fingerprint
   (JNIEnv *, jclass, jstring);
 
 #ifdef __cplusplus
