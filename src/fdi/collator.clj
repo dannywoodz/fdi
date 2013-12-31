@@ -1,5 +1,5 @@
 (ns fdi.collator
-  (:require [clojure.core.async :as async :refer :all]))
+  (:require [clojure.core.async :as async :refer [go >! <!]]))
 
 
 (defn start [fingerprint-channel analyser-channel]

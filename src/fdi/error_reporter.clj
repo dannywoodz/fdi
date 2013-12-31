@@ -1,5 +1,5 @@
 (ns fdi.error-reporter
-  (:require [clojure.core.async :as async :refer :all]))
+  (:require [clojure.core.async :as async :refer [<! go]]))
 
 (defn start [source-channel error-callback]
   (go

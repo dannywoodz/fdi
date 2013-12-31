@@ -1,5 +1,5 @@
 (ns fdi.core
-  (:require [clojure.core.async :as async :refer :all]
+  (:require [clojure.core.async :as async :refer [chan <!!]]
             [fdi.scanner :as scanner]
             [fdi.error-reporter :as error]
             [fdi.cache-builder :as builder]
@@ -24,22 +24,7 @@
         cache-builder (builder/start filename-channel fingerprint-channel error-channel)
         collator (collator/start fingerprint-channel analyser-channel)
         analyser (analyser/start analyser-channel duplicate-identified finished-channel)]
-    (<!! finished-channel)
-    ;; (go
-    ;;  (loop [open-channels #{error-channel filename-channel fingerprint-channel finished-channel}]
-    ;;    (let [[message channel] (alts! (vec open-channels))]
-    ;;      (cond
-    ;;       (identical? channel error-channel)
-    ;;       (println "Read" message "from the error channel")
-    ;;       (identical? channel filename-channel)
-    ;;       (println "Read" message "from the filename channel")
-    ;;       (identical? channel fingerprint-channel)
-    ;;       (println "Read" message "from the fingerprint channel")
-    ;;       (identical? channel finished-channel)
-    ;;       (println "Read" message "from the finished channel"))
-    ;;      (if-not (empty? open-channels)
-    ;;        (recur (disj open-channels channel))))))
-    ))
+    (<!! finished-channel)))
 
 
 

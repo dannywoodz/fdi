@@ -1,6 +1,6 @@
 (ns fdi.scanner
   (:import [java.io File])
-  (:require [clojure.core.async :as async :refer :all]))
+  (:require [clojure.core.async :as async :refer [go chan <! >!]]))
 
 (defn drain []
   (let [channel (chan)]

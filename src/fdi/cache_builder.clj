@@ -1,7 +1,6 @@
 (ns fdi.cache-builder
-  (:require [clojure.core.async :as async :refer :all])
+  (:require [clojure.core.async :as async :refer [go chan alts! >!! >!]])
   (:import [java.util.concurrent Executors]
-           [magick ImageInfo MagickImage]
            [fdi FileID]))
 
 (defn generate-fingerprint [filename feedback-channel]
