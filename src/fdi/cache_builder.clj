@@ -11,12 +11,15 @@ May throw an exception if there is a problem generating the print."
     (try
       (let [image-info (ImageInfo. filename)
             image (MagickImage. image-info)
-            _ (swap! cleanup conj image)
-            scaled (-> (doto image .normalizeImage)
-                       (.scaleImage 4 4))
-            _ (swap! cleanup conj scaled)]
-        (.setMagick scaled "rgb")
-        (.imageToBlob scaled image-info))
+            _ (swap! cleanup conj image)]
+        (doto image
+          (.transformRgbImage (.getColorspace image-info))
+          .normalizeImage
+          (.transformImage nil "4x4!")
+          (.setMagick "rgb"))
+        (let [blob (.imageToBlob image image-info)]
+          (println "FINGERPRINT SIZE:" (count blob))
+          blob))
       (finally
         (doseq [i @cleanup]
           (.destroyImages i))))))
@@ -96,7 +99,31 @@ It is otherwise identical to generate-fingerprint, which it calls."
           (recur (alts! [filename-channel feedback-channel]))))))))
 
 
+(defmacro ensure [& body]
+  `(let [result# (do ~@body)]
+     (if-not result#
+       (throw (RuntimeException. (str "Failed to evaluate " '~@body))))
+     result#))
+
+(defn- load-image-fingerprint-from-file [#^java.io.File file]
+  (let [image-info (ImageInfo. (.getCanonicalPath file))
+        image (MagickImage. image-info)]
+    (.setMagick image "rgb")
+    (println "RGB'd image is" (count (.imageToBlob image image-info)))
+    (ensure (.normalizeImage image))
+    (println "Normalised image is" (count (.imageToBlob image image-info)))
+    (.transformImage image nil "4x4!")
+    (println "Transformed image is" (count (.imageToBlob image image-info)))
+    (let [fprint (.imageToBlob image image-info)]
+      (.destroyImages image)
+      fprint)))
+
+(defn- test-function [a-directory]
+  (let [fingerprints (clojure.core/map load-image-fingerprint-from-file (.listFiles (java.io.File. a-directory)
+                                                                                    (reify java.io.FilenameFilter
+                                                                                      (#^boolean accept [self #^java.io.File dir #^String name]
+                                                                                        (.endsWith (.toLowerCase name)
+                                                                                                   ".jpg")))))]
+    (doseq [fp fingerprints] (println "Fingerprint size:" (count fp)))))
 
 
-
-  
