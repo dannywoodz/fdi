@@ -1,15 +1,17 @@
 UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Linux)
-	DLEXT=so
-else
+ifeq ($(UNAME_S),Darwn)
 	DLEXT=dylib
+  GCCDL=-dynamiclib
+else
+	DLEXT=so
+  GCCDL=-shared -Wl,-soname,libfileid.so
 endif
 
 all: libfileid.$(DLEXT)
 	mv native/libfileid.$(DLEXT) ../resources
 
 libfileid.$(DLEXT): native/fdi_FileID.h native/fdi_FileID.c
-	cd native && gcc -dynamiclib -fPIC -Wall fdi_FileID.c -o $@ `pkg-config --libs --cflags MagickWand` -g -D_GNU_SOURCE
+	cd native && gcc $(GCCDL) -fPIC -Wall fdi_FileID.c -o $@ `pkg-config --libs --cflags MagickWand` -g -D_GNU_SOURCE
 
 native/fdi_FileID.h: fdi/FileID.class
 	cd java && javah -d ../native fdi.FileID
