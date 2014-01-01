@@ -1,5 +1,5 @@
 UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Darwn)
+ifeq ($(UNAME_S),Darwin)
 	DLEXT=dylib
   GCCDL=-dynamiclib
 else
