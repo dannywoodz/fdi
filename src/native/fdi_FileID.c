@@ -62,35 +62,35 @@ JNIEXPORT jlongArray JNICALL Java_fdi_FileID_id(JNIEnv *env, jclass type, jstrin
 
 JNIEXPORT jbyteArray JNICALL Java_fdi_FileID_fingerprint(JNIEnv *env, jclass type, jstring jfilename)
 {
+  jbyteArray fingerprint = NULL;
   const char *filename = (*env)->GetStringUTFChars(env, jfilename, NULL);
   MagickWand *wand = NewMagickWand();
 
   if (MagickReadImage(wand, filename) == MagickFalse)
   {
     throw_ioexception(env, "failed to open %s: %s\n", filename, strerror(errno));
-    (*env)->ReleaseStringUTFChars(env, jfilename, filename);
-    return NULL;
+    goto cleanup;
   }
 
   MagickResetIterator(wand);
   if (MagickNextImage(wand) == MagickFalse)
   {
     throw_ioexception(env, "failed to find image in %s\n", filename);
-    (*env)->ReleaseStringUTFChars(env, jfilename, filename);
-    return NULL;
+    goto cleanup;
   }
-
-  (*env)->ReleaseStringUTFChars(env, jfilename, filename);
 
   MagickNormalizeImage(wand);
   MagickScaleImage(wand, 4, 4);
   MagickSetImageFormat(wand, "rgb");
   size_t length;
   unsigned char *blob = MagickGetImageBlob(wand, &length);
-  jbyteArray jBlob = (*env)->NewByteArray(env, length);
-  (*env)->SetByteArrayRegion(env, jBlob, 0, length, (jbyte*)blob);
+  fingerprint = (*env)->NewByteArray(env, length);
+  (*env)->SetByteArrayRegion(env, fingerprint, 0, length, (jbyte*)blob);
   MagickRelinquishMemory(blob);
-  DestroyMagickWand(wand);
 
-  return jBlob;
+cleanup:
+  (*env)->ReleaseStringUTFChars(env, jfilename, filename);
+  if ( wand ) DestroyMagickWand(wand);
+
+  return fingerprint;
 }
