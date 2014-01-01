@@ -6,6 +6,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 #include <wand/MagickWand.h>
 
 
@@ -42,7 +43,7 @@ JNIEXPORT jlongArray JNICALL Java_fdi_FileID_id(JNIEnv *env, jclass type, jstrin
   }
   else
   {
-    throw_ioexception(env, "Error opening %s", filename);
+    throw_ioexception(env, "failed to open %s: %s\n", filename, strerror(errno));
     (*env)->ReleaseStringUTFChars(env, jfilename, filename);
     return NULL;
   }
@@ -66,7 +67,7 @@ JNIEXPORT jbyteArray JNICALL Java_fdi_FileID_fingerprint(JNIEnv *env, jclass typ
 
   if (MagickReadImage(wand, filename) == MagickFalse)
   {
-    throw_ioexception(env, "Failed to open %s", filename);
+    throw_ioexception(env, "failed to open %s: %s\n", filename, strerror(errno));
     (*env)->ReleaseStringUTFChars(env, jfilename, filename);
     return NULL;
   }
@@ -74,7 +75,7 @@ JNIEXPORT jbyteArray JNICALL Java_fdi_FileID_fingerprint(JNIEnv *env, jclass typ
   MagickResetIterator(wand);
   if (MagickNextImage(wand) == MagickFalse)
   {
-    throw_ioexception(env, "Failed to find image in %s", filename);
+    throw_ioexception(env, "failed to find image in %s\n", filename);
     (*env)->ReleaseStringUTFChars(env, jfilename, filename);
     return NULL;
   }
