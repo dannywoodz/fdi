@@ -1,7 +1,6 @@
 (ns fdi.cache-builder
   (:require [clojure.core.async :as async :refer [go chan alts! >!! >!]])
-  (:import [java.util.concurrent Executors]
-           [java.io File]
+  (:import [java.io File]
            [fdi FileID]))
 
 (defn generate-fingerprint [filename feedback-channel]
@@ -35,7 +34,6 @@ It is otherwise identical to generate-fingerprint, which it calls."
   ;; which cannot be read.
   (let [cpu-count (.availableProcessors (Runtime/getRuntime))
         agent-pool (clojure.core/map #(agent %) (range cpu-count))
-        executor (Executors/newFixedThreadPool cpu-count)
         feedback-channel (chan)]
     (go
      (loop [[message channel] (alts! [filename-channel feedback-channel])]
@@ -46,7 +44,6 @@ It is otherwise identical to generate-fingerprint, which it calls."
         (cond
          (= message :stop)
          (do
-           (.shutdown executor)
            (>! fingerprint-channel :stop)
            (>! error-channel :stop))
          :default
@@ -58,16 +55,10 @@ It is otherwise identical to generate-fingerprint, which it calls."
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;; new filename received for caching
         (= channel filename-channel)
-        (do
-          (try
-            (let [agent-index (rem (Math/abs (.hashCode message)) cpu-count)
-                  selected-agent (nth agent-pool agent-index)]
-              (send-via executor selected-agent
-                        agent-generate-fingerprint
-                        message feedback-channel))
-            (catch java.io.IOException e
-              (>! error-channel {:filename message
-                                 :key :error
-                                 :fingerprint :error
-                                 :error e})))
-          (recur (alts! [filename-channel feedback-channel]))))))))
+         (let [agent-index (rem (Math/abs (.hashCode message)) cpu-count)
+               selected-agent (nth agent-pool agent-index)]
+           (send
+            selected-agent
+            agent-generate-fingerprint
+            message feedback-channel)
+           (recur (alts! [filename-channel feedback-channel]))))))))
