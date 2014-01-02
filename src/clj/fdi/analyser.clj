@@ -45,7 +45,6 @@
 
 (defn start [analyser-channel duplicate-handler finished-channel]
   (go
-   (println "Starting analyser")
    (let [prints (<! analyser-channel)
          duplicates (find-duplicates prints)]
      (doseq [dup (remove empty? duplicates)] (duplicate-handler dup))

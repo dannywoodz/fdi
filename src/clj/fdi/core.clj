@@ -7,7 +7,7 @@
             [fdi.analyser :as analyser]))
 
 (defn- duplicate-identified [a-vector]
-  (println "Duplicate identified:" a-vector))
+  (println (clojure.string/join "\t" (map :filename (sort #(< (:size %2) (:size %1)) a-vector)))))
 
 (defn- fingerprint-generation-failed [{filename :filename}]
   (println "Couldn't generate fingerprint for" filename))

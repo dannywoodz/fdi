@@ -1,6 +1,7 @@
 (ns fdi.cache-builder
   (:require [clojure.core.async :as async :refer [go chan alts! >!! >!]])
   (:import [java.util.concurrent Executors]
+           [java.io File]
            [fdi FileID]))
 
 (defn generate-fingerprint [filename feedback-channel]
@@ -9,8 +10,9 @@ Calls the success-callback with the fingerprint on successor, or error-callback
 with no arguments if an error occurs.  Should never itself throw an error."
   (try
     (let [id (FileID/idString filename)
-          fingerprint (FileID/fingerprint filename)]
-      (>!! feedback-channel {:filename filename :id id :fingerprint fingerprint}))
+          fingerprint (FileID/fingerprint filename)
+          size (.length (File. filename))]
+      (>!! feedback-channel {:filename filename :id id :fingerprint fingerprint :size size}))
     (catch Exception e
       (>!! feedback-channel {:filename filename :id :error :fingerprint :error :error e}))))
 
@@ -35,7 +37,6 @@ It is otherwise identical to generate-fingerprint, which it calls."
         agent-pool (clojure.core/map #(agent %) (range cpu-count))
         executor (Executors/newFixedThreadPool cpu-count)
         feedback-channel (chan)]
-    (println "Starting cache builder")
     (go
      (loop [[message channel] (alts! [filename-channel feedback-channel])]
        (cond

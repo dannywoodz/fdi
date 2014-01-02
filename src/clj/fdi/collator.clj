@@ -4,7 +4,6 @@
 
 (defn start [fingerprint-channel analyser-channel]
   (go
-   (println "Starting collator")
    (loop [fingerprint (<! fingerprint-channel)
           prints []]
      (if (identical? fingerprint :stop)
