@@ -12,9 +12,8 @@
 (defn- fingerprint-generation-failed [{filename :filename}]
   (println "Couldn't generate fingerprint for" filename))
 
-(defn -main [& args]
-  (let [base-directory (first args)
-        error-channel (chan)
+(defn scan [base-directory duplicate-handler]
+  (let [error-channel (chan)
         filename-channel (chan)
         fingerprint-channel (chan)
         analyser-channel (chan)
@@ -23,8 +22,13 @@
         error-reporter (error/start error-channel fingerprint-generation-failed)
         cache-builder (builder/start filename-channel fingerprint-channel error-channel)
         collator (collator/start fingerprint-channel analyser-channel)
-        analyser (analyser/start analyser-channel duplicate-identified finished-channel)]
+        analyser (analyser/start analyser-channel duplicate-handler finished-channel)]
     (<!! finished-channel)))
+
+
+(defn -main [& args]
+  (scan (first args) duplicate-identified))
+
 
 
 
