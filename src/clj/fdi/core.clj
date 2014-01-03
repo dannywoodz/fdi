@@ -1,13 +1,25 @@
 (ns fdi.core
   (:require [clojure.core.async :as async :refer [chan <!!]]
+            [clojure.java.io :as io]
             [fdi.scanner :as scanner]
             [fdi.error-reporter :as error]
             [fdi.cache-builder :as builder]
             [fdi.collator :as collator]
             [fdi.analyser :as analyser]))
 
+(defn- duplicate-report [#^String a-duplicate-report]
+  (clojure.string/join "\t" (map :filename (sort #(< (:size %2) (:size %1)) a-duplicate-report))))
+
+(defn- duplicate-reporter-on [#^String filename]
+  (let [writer (io/writer (io/file filename))]
+    (fn [report]
+      (doto writer
+        (.write (duplicate-report report))
+        (.write "\n")
+        .flush))))
+
 (defn- duplicate-identified [a-vector]
-  (println (clojure.string/join "\t" (map :filename (sort #(< (:size %2) (:size %1)) a-vector)))))
+  (println (duplicate-report a-vector)))
 
 (defn- fingerprint-generation-failed [{filename :filename}]
   (println "Couldn't generate fingerprint for" filename))
@@ -27,7 +39,9 @@
 
 
 (defn -main [& args]
-  (scan (first args) duplicate-identified))
+  (scan (first args) (if (= (count args) 2)
+                       (duplicate-reporter-on (second args))
+                       duplicate-identified)))
 
 
 
