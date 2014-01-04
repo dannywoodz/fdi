@@ -4,14 +4,15 @@
 
 (defn load []
   (let [spec {:subprotocol "sqlite"
-              :subname "cache.sqlite"}
-        object {:data (atom
-                       (reduce (fn [c t]
-                                 (assoc c (:id t) t))
-                               {}
-                               (db/query spec ["select id,fingerprint,size from cache"])))
-                :spec spec}]
-    object))
+              :subname "cache.sqlite"}]
+    (db/db-do-commands spec
+     "CREATE TABLE IF NOT EXISTS cache(id TEXT PRIMARY KEY NOT NULL, fingerprint BLOB NOT NULL, size INTEGER NOT NULL)")
+    {:data (atom
+            (reduce (fn [c t]
+                      (assoc c (:id t) t))
+                    {}
+                    (db/query spec ["select id,fingerprint,size from cache"])))
+     :spec spec}))
 
 (defn save [{:keys [data spec] :as cache}]
   (db/with-db-transaction [connection spec]
