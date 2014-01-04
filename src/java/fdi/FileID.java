@@ -43,7 +43,7 @@ public class FileID
   public static final boolean isSimilar(byte [] first, byte [] second)
   {
     int error = 0;
-    int cutoff = first.length * 3;
+    int cutoff = first.length * 5;
     for ( int i = 0 ; error < cutoff && i < first.length ; i++ )
     {
       error += Math.abs(first[i] - second[i]);
