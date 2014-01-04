@@ -5,8 +5,8 @@
 (defn start [fingerprint-channel analyser-channel]
   (go
    (loop [fingerprint (<! fingerprint-channel)
-          prints []]
+          prints '()]
      (if (identical? fingerprint :stop)
        (>! analyser-channel prints)
        (recur (<! fingerprint-channel)
-              (conj prints fingerprint))))))
+              (cons fingerprint prints))))))

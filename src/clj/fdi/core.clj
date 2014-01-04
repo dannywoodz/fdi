@@ -11,7 +11,7 @@
   (clojure.string/join "\t" (map :filename (sort #(< (:size %2) (:size %1)) a-duplicate-report))))
 
 (defn- duplicate-reporter-on [#^String filename]
-  (let [writer (io/writer (io/file filename))]
+  (let [#^java.io.Writer writer (io/writer (io/file filename))]
     (fn [report]
       (doto writer
         (.write (duplicate-report report))

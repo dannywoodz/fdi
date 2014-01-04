@@ -12,36 +12,45 @@
 
 (defn- duplicates-of [ref-print all-prints]
   (loop [prints all-prints
-         duplicates []]
+         duplicates '()]
     (if (empty? prints)
-      duplicates
+      (if-not (empty? duplicates)
+        (cons ref-print duplicates)
+        duplicates)
       (recur (rest prints)
              (if (similar? ref-print (first prints))
-               (conj duplicates (first prints))
+               (cons (first prints) duplicates)
                duplicates)))))
 
-(defn- spawn-channels [fingerprints]
+(defn- duplicates-of-sub-group [_agent-state fingerprints partition-size]
   (loop [prints fingerprints
-         answers []]
-    (if (empty? prints)
-      answers
-      (recur
-       (rest prints)
-       (conj answers
-             (go
-              (let [dups (duplicates-of (first prints) (rest prints))]
-                (if (empty? dups)
-                  dups
-                  (cons (first prints) dups)))))))))
+         n partition-size
+         results '()]
+    (if (or (zero? n) (empty? prints))
+      (remove empty? results)
+      (let [ref-print (first prints)]
+        (recur (drop partition-size prints)
+               (dec n)
+               (cons (duplicates-of ref-print (rest prints))
+                       results))))))
 
 (defn- find-duplicates [fingerprints]
-  (loop [channels (spawn-channels fingerprints)
-         results []]
-    (if (empty? channels)
-      results
-      (recur
-       (rest channels)
-       (conj results (<!! (first channels)))))))
+  (let [thread-count (-> clojure.lang.Agent/pooledExecutor .getCorePoolSize)
+        agent-pool (map #(agent %) (range thread-count))
+        partition-size (Math/ceil (/ (count fingerprints) thread-count))]
+    (loop [agents agent-pool
+           prints fingerprints]
+      (if (empty? agents)
+        (do
+          (apply await agent-pool)
+          (mapcat deref agent-pool))
+        (do
+          (send-off (first agents)
+                    duplicates-of-sub-group
+                    prints
+                    partition-size)
+          (recur (rest agents)
+                 (drop partition-size prints)))))))
 
 (defn start [analyser-channel duplicate-handler finished-channel]
   (go
