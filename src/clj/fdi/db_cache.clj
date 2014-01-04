@@ -12,7 +12,7 @@
                                (db/query spec ["select id,fingerprint,size from cache"])))
                 :spec spec}]
     object))
-  
+
 (defn save [{:keys [data spec] :as cache}]
   (db/with-db-transaction [connection spec]
     (db/delete! spec :cache [])
@@ -25,12 +25,12 @@
 
 (defn- cache-miss [data-atom id genfn]
   (println "Cache MISS for" id)
-	(let [record (genfn)]
-	  (swap! data-atom assoc id record)
-		record))
+  (let [record (genfn)]
+    (swap! data-atom assoc id record)
+    record))
 
 (defn find-if-absent-put [{data :data :as cache} id genfn]
   (let [record (get @data id)]
-	  (if record
-			(cache-hit record)
-			(cache-miss data id genfn))))
+    (if record
+      (cache-hit record)
+      (cache-miss data id genfn))))
