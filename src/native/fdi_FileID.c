@@ -32,34 +32,6 @@ static void throw_ioexception(JNIEnv *env, const char *fmt, ...)
   free(message);
 }
 
-JNIEXPORT jlongArray JNICALL Java_fdi_FileID_id(JNIEnv *env, jclass type, jstring jfilename)
-{
-  const char *filename = (*env)->GetStringUTFChars(env, jfilename, NULL);
-  struct stat file_info;
-
-  if ((stat(filename, &file_info)) == 0)
-  {
-    (*env)->ReleaseStringUTFChars(env, jfilename, filename);
-  }
-  else
-  {
-    throw_ioexception(env, "failed to open %s: %s\n", filename, strerror(errno));
-    (*env)->ReleaseStringUTFChars(env, jfilename, filename);
-    return NULL;
-  }
-
-  jlong nativeFields[3] = {
-    file_info.st_dev,
-    file_info.st_ino,
-    file_info.st_mtime
-  };
-
-  jlongArray fields = (*env)->NewLongArray(env, 3);
-  (*env)->SetLongArrayRegion(env, fields, 0, 3, nativeFields);
-
-  return fields;
-}
-
 JNIEXPORT jbyteArray JNICALL Java_fdi_FileID_fingerprint(JNIEnv *env, jclass type, jstring jfilename)
 {
   jbyteArray fingerprint = NULL;
