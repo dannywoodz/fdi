@@ -45,10 +45,10 @@
           (apply await agent-pool)
           (mapcat deref agent-pool))
         (do
-          (send-off (first agents)
-                    duplicates-of-sub-group
-                    prints
-                    partition-size)
+          (send (first agents)
+                duplicates-of-sub-group
+                prints
+                partition-size)
           (recur (rest agents)
                  (drop partition-size prints)))))))
 
