@@ -7,7 +7,7 @@
             [fdi.collator :as collator]
             [fdi.analyser :as analyser]))
 
-(defn- duplicate-report [#^String a-duplicate-report]
+(defn- duplicate-report [a-duplicate-report]
   (clojure.string/join "\t" (map :filename (sort #(< (:size %2) (:size %1)) a-duplicate-report))))
 
 (defn- duplicate-reporter-on [#^String filename]
