@@ -31,8 +31,8 @@
       (let [ref-print (first prints)]
         (recur (rest prints)
                (dec n)
-               (concat (duplicates-of ref-print (rest prints))
-                       results))))))
+               (cons (duplicates-of ref-print (rest prints))
+                     results))))))
 
 (defn- find-duplicates [fingerprints]
   (let [thread-count (-> clojure.lang.Agent/pooledExecutor .getCorePoolSize)
