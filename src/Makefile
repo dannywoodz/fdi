@@ -20,7 +20,7 @@ fdi/FileID.class: java/fdi/FileID.java
 	cd java && javac fdi/FileID.java
 
 install: libfileid.$(DLEXT)
-	cp fdi/libfileid.$(DLEXT) ${HOME}/sfw/lib
+	cp ../resources/libfileid.$(DLEXT) ${HOME}/sfw/lib
 
 clean:
 	rm -f java/fdi/FileID.class fdi/libfileid.$(DLEXT) native/fdi/fdi_FileID.h
