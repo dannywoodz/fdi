@@ -29,15 +29,15 @@
     (if (or (zero? n) (empty? prints))
       (remove empty? results)
       (let [ref-print (first prints)]
-        (recur (drop partition-size prints)
+        (recur (rest prints)
                (dec n)
-               (cons (duplicates-of ref-print (rest prints))
+               (concat (duplicates-of ref-print (rest prints))
                        results))))))
 
 (defn- find-duplicates [fingerprints]
   (let [thread-count (-> clojure.lang.Agent/pooledExecutor .getCorePoolSize)
         agent-pool (map #(agent %) (range thread-count))
-        partition-size (Math/ceil (/ (count fingerprints) thread-count))]
+        partition-size (int (Math/ceil (/ (count fingerprints) thread-count)))]
     (loop [agents agent-pool
            prints fingerprints]
       (if (empty? agents)
