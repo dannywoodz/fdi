@@ -1,5 +1,5 @@
 (ns fdi.analyser
-  (:require [clojure.core.async :as async :refer [go <!! <! >!]]))
+  (:require [clojure.core.async :as async :refer [go <! >!]]))
 
 (defn- similar? [{#^bytes first-print :fingerprint fn1 :filename :as fp1}
                  {#^bytes second-print :fingerprint fn2 :filename :as fp2}]
