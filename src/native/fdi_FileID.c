@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <openssl/sha.h>
 #include <wand/MagickWand.h>
 
 
@@ -18,6 +19,7 @@ JNIEXPORT void JNICALL Java_fdi_FileID_init(JNIEnv *env, jclass type)
 static void throw_ioexception(JNIEnv *env, const char *fmt, ...)
 {
   char *message = NULL;
+  char *message_default = "Out of memory";
   jclass ioException = (*env)->FindClass(env, "java/io/IOException");
   if (!ioException)
   {
@@ -26,10 +28,16 @@ static void throw_ioexception(JNIEnv *env, const char *fmt, ...)
   }
   va_list args;
   va_start(args, fmt);
-  vasprintf(&message, fmt, args);
+  if (vasprintf(&message, fmt, args) == -1) // vasprintf failed
+  {
+    (*env)->ThrowNew(env, ioException, message_default); // hard-coded string is the best we can do
+  }
+  else
+  {
+    (*env)->ThrowNew(env, ioException, message);
+    free(message);
+  }
   va_end(args);
-  (*env)->ThrowNew(env, ioException, message);
-  free(message);
 }
 
 JNIEXPORT jbyteArray JNICALL Java_fdi_FileID_fingerprint(JNIEnv *env, jclass type, jstring jfilename)
