@@ -68,7 +68,7 @@ public class FileID
 	);
     
     int error = 0;
-    int cutoff = first.length * 5;
+    int cutoff = first.length * 3;
     for ( int i = 0 ; error < cutoff && i < first.length ; i++ )
     {
       error += Math.abs((first[i] & 0xff) - (second[i] & 0xff));
