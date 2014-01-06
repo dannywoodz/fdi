@@ -21,23 +21,22 @@
                (cons (first prints) duplicates)
                duplicates)))))
 
-(defn- finder [prints-atom]
-  (loop [[ref-print & prints] (swap! prints-atom rest)
-         duplicates '()]
+(defn- finder [prints-atom duplicates-channel]
+  (loop [[ref-print & prints] (swap! prints-atom rest)]
     (if (nil? prints)
-      duplicates
+      :finished
       (let [dups (duplicates-of ref-print prints)]
-        (recur (swap! prints-atom rest)
-               (if (empty? dups)
-                 duplicates
-                 (cons (cons ref-print dups) duplicates)))))))
+        (if-not (empty? dups)
+          (>!! duplicates-channel (cons ref-print dups)))
+        (recur (swap! prints-atom rest))))))
 
-(defn start [analyser-channel duplicate-handler finished-channel]
+
+
+(defn start [analyser-channel duplicates-channel]
   (go
    (let [fingerprints (atom (<! analyser-channel))
          thread-count (-> clojure.lang.Agent/pooledExecutor .getCorePoolSize)
-         agent-pool (map (fn [_] (send (agent fingerprints) finder)) (range thread-count))]
+         agent-pool (map (fn [_] (send (agent fingerprints) finder duplicates-channel)) (range thread-count))]
      (apply await agent-pool)
-     (doseq [dup (remove empty? (mapcat deref agent-pool))]
-       (duplicate-handler dup))
-     (>! finished-channel :stop))))
+     (>! duplicates-channel :stop))))
+
