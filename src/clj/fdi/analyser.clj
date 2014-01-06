@@ -22,35 +22,60 @@
                (cons (first prints) duplicates)
                duplicates)))))
 
-(defn- duplicates-of-sub-group [_agent-state fingerprints partition-size]
-  (loop [prints fingerprints
-         n partition-size
-         results '()]
-    (if (or (zero? n) (empty? prints))
-      (remove empty? results)
-      (let [ref-print (first prints)]
-        (recur (rest prints)
-               (dec n)
-               (cons (duplicates-of ref-print (rest prints))
-                     results))))))
+(defn- duplicates-of-sub-group [agent-state fingerprints partition-size]
+  (let [before (System/currentTimeMillis)]
+    (loop [prints fingerprints
+           n partition-size
+           results '()]
+      (if (or (zero? n) (empty? prints))
+        (do
+          (println "Agent" agent-state "handled" partition-size "prints in" (- (System/currentTimeMillis) before) "milliseconds")
+          (remove empty? results))
+        (let [ref-print (first prints)]
+          (recur (rest prints)
+                 (dec n)
+                 (cons (duplicates-of ref-print (rest prints))
+                       results)))))))
+
+(defn- task-distribution [partition-count set-size]
+  (let [base-sequence  (take partition-count (drop 2 ((fn rfib [a b]
+                                                        (lazy-seq (cons a (rfib b (+ a b)))))
+                                                      0 1)))]
+    (loop [multiplier 1]
+      (let [scaled-sequence (map #(* % multiplier) base-sequence)]
+        (if (< (apply + scaled-sequence) set-size)
+          (recur (inc multiplier))
+          scaled-sequence)))))
 
 (defn- find-duplicates [fingerprints]
+  ;; Finding duplicates naiively (as per this approach) is an n^2 problem.
+  ;; That time can be halved by noting that 'A is a duplicate of B' implies
+  ;; that B is a duplicate of A.
+  ;; The remaining problem is one of distribution.  A simple partitioning of
+  ;; the search space is uneven: the candidate set for the first agent is
+  ;; the entire input set of prints, but for the last agent it's some fraction
+  ;; of that.
+  ;; This can be slightly spread out by having varying size partitions, which
+  ;; is where #'task-distribution comes in.  Early partitions are smaller than
+  ;; later ones, taking into account that earlier partitions have more of a
+  ;; search space to contend with.
   (let [thread-count (-> clojure.lang.Agent/pooledExecutor .getCorePoolSize)
-        agent-pool (map #(agent %) (range thread-count))
-        partition-size (int (Math/ceil (/ (count fingerprints) thread-count)))]
+        agent-pool (map #(agent %) (range thread-count))]
     (loop [agents agent-pool
-           prints fingerprints]
+           prints fingerprints
+           distribution (task-distribution thread-count (count fingerprints))]
       (if (empty? agents)
         (do
           (apply await agent-pool)
           (mapcat deref agent-pool))
-        (do
+        (let [partition-size (first distribution)]
           (send (first agents)
                 duplicates-of-sub-group
                 prints
                 partition-size)
           (recur (rest agents)
-                 (drop partition-size prints)))))))
+                 (drop partition-size prints)
+                 (rest distribution)))))))
 
 (defn start [analyser-channel duplicate-handler finished-channel]
   (go
