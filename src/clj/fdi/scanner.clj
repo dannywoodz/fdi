@@ -1,3 +1,26 @@
+;; APPLICATION
+;;
+;; fdi - Find Duplicates Images
+;;
+;; FILE
+;;
+;; scanner.clj
+;;
+;; DESCRIPTION
+;;
+;; Scans a directory tree starting at a supplied base and identifies image files.
+;; Such files are written to the output channel.
+;;
+;; When all files have been processed, the keyword :stop is sent to the output channel
+;;
+;; COPYRIGHT
+;;
+;; Copyright (C) 2014 Daniel Woods
+;;
+;; LICENSE
+;;
+;; GNU General Public License, version 3 (http://opensource.org/licenses/GPL-3.0)
+
 (ns fdi.scanner
   (:import [java.io File])
   (:require [clojure.core.async :as async :refer [go >!]]))

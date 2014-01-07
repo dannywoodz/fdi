@@ -1,3 +1,32 @@
+;; APPLICATION
+;;
+;; fdi - Find Duplicates Images
+;;
+;; FILE
+;;
+;; core.clj
+;;
+;; DESCRIPTION
+;;
+;; Entry point and choreographer for the Find Duplicate Images application.
+;;
+;; The #'scan method takes a base directory name and a function that will be
+;; invoked with a list of fingerprint bundles when duplicates are identified.
+;;
+;; The fingerprint bundle is a hash:
+;;
+;; { :filename    java.lang.String,
+;;   :fingerprint byte[],
+;;   :id          java.lang.String }
+;;
+;; COPYRIGHT
+;;
+;; Copyright (C) 2014 Daniel Woods
+;;
+;; LICENSE
+;;
+;; GNU General Public License, version 3 (http://opensource.org/licenses/GPL-3.0)
+
 (ns fdi.core
   (:require [clojure.core.async :as async :refer [chan <!!]]
             [clojure.java.io :as io]

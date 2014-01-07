@@ -1,3 +1,24 @@
+// APPLICATION
+//
+// fdi - Find Duplicates Images
+//
+// FILE
+//
+// fdi_FileID.c
+//
+// DESCRIPTION
+//
+// Native bridge to ImageMagick functions required for generating image
+// fingerprints.
+//
+// COPYRIGHT
+//
+// Copyright (C) 2014 Daniel Woods
+//
+// LICENSE
+//
+// GNU General Public License, version 3 (http://opensource.org/licenses/GPL-3.0)
+
 #include <jni.h>
 #include <sys/types.h>
 #include <sys/stat.h>

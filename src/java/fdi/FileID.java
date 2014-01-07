@@ -1,3 +1,26 @@
+// APPLICATION
+//
+// fdi - Find Duplicates Images
+//
+// FILE
+//
+// FileID.java
+//
+// DESCRIPTION
+//
+// Convenience functions for the Find Duplicate Images application,
+// written in Java for speed.
+//
+// The fingerprint bundle is a hash:
+//
+// COPYRIGHT
+//
+// Copyright (C) 2014 Daniel Woods
+//
+// LICENSE
+//
+// GNU General Public License, version 3 (http://opensource.org/licenses/GPL-3.0)
+
 package fdi;
 
 import java.io.File;

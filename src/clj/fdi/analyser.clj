@@ -1,6 +1,37 @@
+;; APPLICATION
+;;
+;; fdi - Find Duplicates Images
+;;
+;; FILE
+;;
+;; analyser.clj
+;;
+;; DESCRIPTION
+;;
+;; Reads a sequence of image fingerprints from an input channel provided to
+;; the #'start and sends groupings of fingerprints identified as duplicates to
+;; an output channel.
+;;
+;; The fingerprint bundle is a hash:
+;;
+;; { :filename    java.lang.String,
+;;   :fingerprint byte[],
+;;   :id          java.lang.String }
+;;
+;; Duplicates are similarly sequences of fingerprints.
+;;
+;; Unique images are not reported at all on the output channel.
+;;
+;; COPYRIGHT
+;;
+;; Copyright (C) 2014 Daniel Woods
+;;
+;; LICENSE
+;;
+;; GNU General Public License, version 3 (http://opensource.org/licenses/GPL-3.0)
+
 (ns fdi.analyser
-  (:require [clojure.core.async :as async :refer [go close! chan >!! <!! <! >!]])
-  (:import [java.util.concurrent ArrayBlockingQueue]))
+  (:require [clojure.core.async :as async :refer [go >!! <! >!]]))
 
 (defn- similar? [{#^bytes first-print :fingerprint fn1 :filename :as fp1}
                  {#^bytes second-print :fingerprint fn2 :filename :as fp2}]
