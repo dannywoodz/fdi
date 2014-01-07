@@ -35,12 +35,12 @@
 
 (defn- similar? [{#^bytes first-print :fingerprint fn1 :filename :as fp1}
                  {#^bytes second-print :fingerprint fn2 :filename :as fp2}]
-  (fdi.FileID/isSimilar first-print second-print))
+  (fdi.FDI/isSimilar first-print second-print))
 
 (defn- fingerprint-from-file-named [filename]
   {:filename filename
-   :fingerprint (fdi.FileID/fingerprint filename)
-   :id (fdi.FileID/idString filename)})
+   :fingerprint (fdi.FDI/fingerprint filename)
+   :id (fdi.FDI/idString filename)})
 
 (defn- duplicates-of [ref-print all-prints]
   (loop [prints all-prints

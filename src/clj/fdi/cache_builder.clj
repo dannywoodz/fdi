@@ -44,18 +44,18 @@
   (:require [clojure.core.async :as async :refer [go chan alts! >!! >! <!]]
             [fdi.db-cache :as cache])
   (:import [java.io File]
-           [fdi FileID]))
+           [fdi FDI]))
 
 (defn generate-fingerprint [#^String filename success-channel error-channel cache-state]
   "Generates a byte-array fingerprint for the image file in the given filename.
 Calls the success-callback with the fingerprint on successor, or error-callback
 with no arguments if an error occurs.  Should never itself throw an error."
   (try
-    (let [id (FileID/idString filename)
+    (let [id (FDI/idString filename)
           fingerprint (cache/find-if-absent-put
                        cache-state id
                        #(hash-map
-                         :fingerprint (FileID/fingerprint filename)
+                         :fingerprint (FDI/fingerprint filename)
                          :size (.length (File. filename))
                          :id id))]
       (>!! success-channel (assoc fingerprint :filename filename)))

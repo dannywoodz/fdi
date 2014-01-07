@@ -4,7 +4,7 @@
 //
 // FILE
 //
-// fdi_FileID.c
+// fdi_FDI.c
 //
 // DESCRIPTION
 //
@@ -32,7 +32,7 @@
 #include <wand/MagickWand.h>
 
 
-JNIEXPORT void JNICALL Java_fdi_FileID_init(JNIEnv *env, jclass type)
+JNIEXPORT void JNICALL Java_fdi_FDI_init(JNIEnv *env, jclass type)
 {
   MagickWandGenesis();
 }
@@ -61,7 +61,7 @@ static void throw_ioexception(JNIEnv *env, const char *fmt, ...)
   va_end(args);
 }
 
-JNIEXPORT jbyteArray JNICALL Java_fdi_FileID_fingerprint(JNIEnv *env, jclass type, jstring jfilename)
+JNIEXPORT jbyteArray JNICALL Java_fdi_FDI_fingerprint(JNIEnv *env, jclass type, jstring jfilename)
 {
   jbyteArray fingerprint = NULL;
   const char *filename = (*env)->GetStringUTFChars(env, jfilename, NULL);

@@ -4,24 +4,24 @@ ifeq ($(UNAME_S),Darwin)
   GCCDL=-dynamiclib
 else
 	DLEXT=so
-  GCCDL=-shared -Wl,-soname,libfileid.so
+  GCCDL=-shared -Wl,-soname,libfdi.so
 endif
 
-all: libfileid.$(DLEXT)
-	mv native/libfileid.$(DLEXT) ../resources
+all: libfdi.$(DLEXT)
+	mv c/libfdi.$(DLEXT) ../resources
 
-libfileid.$(DLEXT): native/fdi_FileID.h native/fdi_FileID.c
-	cd native && gcc $(GCCDL) -fPIC -Wall fdi_FileID.c -o $@ `pkg-config --libs --cflags MagickWand` -g -D_GNU_SOURCE
+libfdi.$(DLEXT): c/fdi_FDI.h c/fdi_FDI.c
+	cd c && gcc $(GCCDL) -fPIC -Wall fdi_FDI.c -o $@ `pkg-config --libs --cflags MagickWand` -g -D_GNU_SOURCE
 
-native/fdi_FileID.h: fdi/FileID.class
-	cd java && javah -d ../native fdi.FileID
+c/fdi_FDI.h: fdi/FDI.class
+	cd java && javah -d ../c fdi.FDI
 
-fdi/FileID.class: java/fdi/FileID.java
-	cd java && javac fdi/FileID.java
+fdi/FDI.class: java/fdi/FDI.java
+	cd java && javac fdi/FDI.java
 
-install: libfileid.$(DLEXT)
-	cp ../resources/libfileid.$(DLEXT) ${HOME}/sfw/lib
+install: libfdi.$(DLEXT)
+	cp ../resources/libfdi.$(DLEXT) ${HOME}/sfw/lib
 
 clean:
-	rm -f java/fdi/FileID.class fdi/libfileid.$(DLEXT) native/fdi/fdi_FileID.h
+	rm -f java/fdi/FDI.class fdi/libfdi.$(DLEXT) c/fdi/fdi_FDI.h
 

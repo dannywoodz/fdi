@@ -4,7 +4,7 @@
 //
 // FILE
 //
-// FileID.java
+// FDI.java
 //
 // DESCRIPTION
 //
@@ -27,7 +27,7 @@ import java.io.File;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-public class FileID
+public class FDI
 {
   private static final native void init();
   private static final MessageDigest sha1;
@@ -41,7 +41,7 @@ public class FileID
     {
       throw new RuntimeException(nsae);
     }
-    System.loadLibrary("fileid");
+    System.loadLibrary("fdi");
     init();
   }
   
