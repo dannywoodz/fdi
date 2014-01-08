@@ -18,7 +18,7 @@ all: $(LIBNAME)
 	mv c/$(LIBNAME) ../resources
 
 $(LIBNAME): c/fdi_FDI.h c/fdi_FDI.c
-	cd c && gcc $(GCCDL) -m$(ARCH_BITS) -fPIC -Wall fdi_FDI.c -o $@ `pkg-config --libs --cflags MagickWand` -g -D_GNU_SOURCE
+	cd c && gcc $(GCCDL) -m$(ARCH_BITS) -fPIC -Wall fdi_FDI.c -o $@ `pkg-config --libs --cflags MagickWand` -g -D_GNU_SOURCE $(CFLAGS)
 
 c/fdi_FDI.h: fdi/FDI.class
 	cd java && javah -d ../c fdi.FDI
