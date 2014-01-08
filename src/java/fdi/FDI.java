@@ -41,7 +41,7 @@ public class FDI
     {
       throw new RuntimeException(nsae);
     }
-    System.loadLibrary("fdi");
+    System.loadLibrary("fdi" + System.getProperty("sun.arch.data.model"));
     init();
   }
   
