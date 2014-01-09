@@ -65,7 +65,7 @@
 
 (defn start [analyser-channel duplicates-channel]
   (go
-   (let [fingerprints (atom (<! analyser-channel))
+   (let [fingerprints (atom (cons nil (<! analyser-channel)))
          thread-count (-> clojure.lang.Agent/pooledExecutor .getCorePoolSize)
          agent-pool (map (fn [_] (send (agent fingerprints) finder duplicates-channel)) (range thread-count))]
      (apply await agent-pool)
