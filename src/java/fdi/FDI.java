@@ -24,6 +24,9 @@
 package fdi;
 
 import java.io.File;
+import java.io.DataOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -54,7 +57,7 @@ public class FDI
 
   public static final native byte[] fingerprint(String filename) throws java.io.IOException;
   
-  public static final String idString(String filename) 
+  public static final String idString(String filename) throws IOException
   {
     /* This key just has to be *unique enough*, given that it's' not driving a nuclear power
        plant.  The best way would probably be to generate a digest of the file, but I don't
@@ -71,14 +74,16 @@ public class FDI
     
     File file = new File(filename);
     MessageDigest sha = generator.get();
-    byte [] hash = sha.digest(filename.getBytes());
+    ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+    DataOutputStream dataStream = new DataOutputStream(byteStream);
+    dataStream.writeBytes(filename);
+    dataStream.writeLong(file.lastModified());
+    dataStream.writeLong(file.length());
+    dataStream.flush();
+    byte [] hash = sha.digest(byteStream.toByteArray());
     sha.reset();
-    StringBuilder builder = new StringBuilder(64);
+    StringBuilder builder = new StringBuilder(hash.length * 2);
     for ( int i = 0 ; i < hash.length ; i++ ) builder.append(Integer.toHexString(hash[i] & 0xff));
-    builder.append('-');
-    builder.append(Long.toString(file.lastModified()));
-    builder.append('-');
-    builder.append(Long.toString(file.length()));
     return builder.toString();
   }
 
