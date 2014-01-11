@@ -1,3 +1,5 @@
+CFLAGS ?=
+CC=gcc -Wall -Werror -pedantic -ansi -std=c99 -g -D_GNU_SOURCE
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 	DLEXT=dylib
@@ -18,7 +20,7 @@ all: $(LIBNAME)
 	mv c/$(LIBNAME) ../resources
 
 $(LIBNAME): c/fdi_FDI.h c/fdi_FDI.c
-	cd c && gcc $(GCCDL) -m$(ARCH_BITS) -fPIC -Wall fdi_FDI.c -o $@ `pkg-config --libs --cflags MagickWand` -g -D_GNU_SOURCE $(CFLAGS)
+	cd c && $(CC) $(CFLAGS) $(GCCDL) -m$(ARCH_BITS) -fPIC fdi_FDI.c -o $@ `pkg-config --libs --cflags MagickWand` 
 
 c/fdi_FDI.h: fdi/FDI.class
 	cd java && javah -d ../c fdi.FDI
