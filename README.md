@@ -7,18 +7,25 @@ therefore possible for images that are of differing dimensions to be
 reported as duplicates, or where the subject matter varies only very
 slightly (such as a re-take of a picture where a subject blinks).
 
-# Implementation
+# Building the Native Dependency
 
-This application is written in a mixture of Clojure (mainly), Java and
-C.  It requires the ImageMagick library, in particular the MagickWand
-C API, where the image 'fingerprinting' is done.
+The native library that interfaces with ImageMagick must be built
+prior to running for the first time.  This needs pkg-config, and
+the MagickWand C API.  To see if you have the required dependencies,
+run 'pkg-config --cflags --libs MagickWand', which should print a list
+of options and paths required.
 
-Clojure is for orchestration and concurrency, with Java for
-performance-sensitive code and C for access to ImageMagick.
+With the MagickWand API available, all that's required is:
 
-This application has been tested against a directory tree containing in
-excess of 200,000 images.  A clean scan on a 3.4GHz Intel Core i7 2600K
-running Linux takes ~1h20m.
+    cd src && make
+
+This will install the native library into the resources folder.
+
+Yes, I'm aware that Leiningen has its own view of where native
+dependencies should go, but I haven't gotten around to making the
+changes yet, and I'm really looking for something that would let
+Leingingen *build* the C library, rather than just distributing it
+as a binary blob.
 
 ## Usage
 
@@ -41,7 +48,21 @@ each fingerprint is a hash conforming to the following structure:
 	  :id          String,
 		:filename    String }
 
-## License
+# Implementation
+
+This application is written in a mixture of Clojure (mainly), Java and
+C.  It requires the ImageMagick library, in particular the MagickWand
+C API, where the image 'fingerprinting' is done.
+
+Clojure is for orchestration and concurrency, with Java for
+performance-sensitive code and C for access to ImageMagick.
+
+This application has been tested against a directory tree containing in
+excess of 200,000 images.  A clean scan on a 3.4GHz Intel Core i7 2600K
+running Linux takes ~1h20m.
+
+
+# License
 
 Copyright © 2014 Daniel Woods (dannywoodz@yahoo.co.uk)
 
