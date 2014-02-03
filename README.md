@@ -61,6 +61,16 @@ This application has been tested against a directory tree containing in
 excess of 200,000 images.  A clean scan on a 3.4GHz Intel Core i7 2600K
 running Linux takes ~1h20m.
 
+# TODO
+
+## Fingerprint caching
+
+This is currently handled via SQLite, but needs re-thinking.
+
+## Command line options
+
+There currently aren't any, but things like --no-cache, --tolerance, etc.
+could do with being configurable.
 
 # License
 
