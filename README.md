@@ -31,14 +31,14 @@ as a binary blob.
 
 As an application:
 
-  lein run /base/directory/for/images
+    lein run /base/directory/for/images
 
 As a library:
 
-  (ns your-namespace
-	  (:require [fdi/core :as fdi]))
+    (ns your-namespace
+        (:require [fdi/core :as fdi]))
 
-	(fdi/scan "/base/directory/for/images" duplicate-handler-fn)
+    (fdi/scan "/base/directory/for/images" duplicate-handler-fn)
 
 duplicate-handler-fn will be invoked once for each set of duplicates
 identified, and will be provided with a list of fingerprints, where
