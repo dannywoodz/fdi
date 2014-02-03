@@ -28,9 +28,6 @@ c/fdi_FDI.h: fdi/FDI.class
 fdi/FDI.class: java/fdi/FDI.java
 	cd java && javac fdi/FDI.java
 
-install: $(LIBNAME)
-	cp ../resources/$(LIBNAME) ${HOME}/sfw/lib
-
 clean:
 	rm -f java/fdi/FDI.class fdi/$(LIBNAME) c/fdi/fdi_FDI.h
 
