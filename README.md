@@ -27,13 +27,19 @@ changes yet, and I'm really looking for something that would let
 Leingingen *build* the C library, rather than just distributing it
 as a binary blob.
 
-## Usage
+# Usage
 
-As an application:
+## As an application:
 
     lein run /base/directory/for/images
 
-As a library:
+Supported command line options:
+
+  * --no-cache -- disable loading or updating the cache.
+  * --tolerance -- adjust the 'fudge factor' observed in fdi/FDI.java
+  * --agents -- set the size of the agent pool used for fingerprint generation and analysis.
+
+## As a library:
 
     (ns your-namespace
         (:require [fdi/core :as fdi]))
@@ -44,9 +50,9 @@ duplicate-handler-fn will be invoked once for each set of duplicates
 identified, and will be provided with a list of fingerprints, where
 each fingerprint is a hash conforming to the following structure:
 
-  { :fingerprint byte[],
-	  :id          String,
-		:filename    String }
+    { :fingerprint byte[],
+      :id          String,
+      :filename    String }
 
 # Implementation
 
@@ -65,12 +71,13 @@ running Linux takes ~1h20m.
 
 ## Fingerprint caching
 
-This is currently handled via SQLite, but needs re-thinking.
+This is currently handled via SQLite, but needs re-thinking.  In particular, the cache is loaded in its entirety up-front, which can actually take a significant amount of time if it has accumulated a large amount of data.
 
-## Command line options
+A better approach would be to clone the on-disk file into an in-memory database and run straight SQL against that.
 
-There currently aren't any, but things like --no-cache, --tolerance, etc.
-could do with being configurable.
+## New Command line options
+
+* --auto -- RISKY! -- automatically delete any images identified as duplicates.
 
 # License
 

@@ -87,7 +87,7 @@ public class FDI
     return builder.toString();
   }
 
-  public static final boolean isSimilar(byte [] first, byte [] second)
+  public static final boolean isSimilar(byte [] first, byte [] second, int tolerance)
   {
     if ( first.length != second.length )
       throw new IllegalArgumentException(
@@ -96,7 +96,7 @@ public class FDI
 	);
     
     int error = 0;
-    int cutoff = first.length * 3;
+    int cutoff = first.length * tolerance;
     for ( int i = 0 ; error < cutoff && i < first.length ; i++ )
     {
       error += Math.abs((first[i] & 0xff) - (second[i] & 0xff));

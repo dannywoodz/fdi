@@ -46,42 +46,37 @@
   (:import [java.io File]
            [fdi FDI]))
 
-(defn generate-fingerprint [#^String filename success-channel error-channel cache-state]
+(defn generate-fingerprint [#^String filename success-channel error-channel cache-lookup-fn]
   "Generates a byte-array fingerprint for the image file in the given filename.
 Calls the success-callback with the fingerprint on successor, or error-callback
 with no arguments if an error occurs.  Should never itself throw an error."
   (try
     (let [id (FDI/idString filename)
-          fingerprint (cache/find-if-absent-put
-                       cache-state id
-                       #(hash-map
-                         :fingerprint (FDI/fingerprint filename)
-                         :size (.length (File. filename))
-                         :id id))]
+          fingerprint (cache-lookup-fn filename id)]
       (>!! success-channel (assoc fingerprint :filename filename)))
     (catch Exception e
       (println e)
       (>!! error-channel {:filename filename :id :error :fingerprint :error :error e}))))
 
-(defn- agent-generate-fingerprint [state filename success-channel error-channel cache]
+(defn- agent-generate-fingerprint [state filename success-channel error-channel cache-lookup-fn]
   "Generates a byte-array fingerprint for the image file in the given filename.
 The first argument, unused, is the state of the agent when the call is made.
 It is otherwise identical to generate-fingerprint, which it calls."
-  (generate-fingerprint filename success-channel error-channel cache))
+  (generate-fingerprint filename success-channel error-channel cache-lookup-fn))
 
-(defn start [filename-channel fingerprint-channel error-channel]
+(defn start [filename-channel fingerprint-channel error-channel {:keys [agent-count disable-cache]}]
   ;; Starts reading from filename-channel, generating image fingerprints to be
   ;; sent to fingerprint-channel.  error-channel is written to for files
   ;; which cannot be read.
-  (let [thread-count (-> clojure.lang.Agent/pooledExecutor .getCorePoolSize)
+  (let [thread-count (or agent-count (-> clojure.lang.Agent/pooledExecutor .getCorePoolSize))
         agent-pool (map #(agent %) (range thread-count))
-        cache-state (cache/load)]
+        cache-state (if disable-cache nil (cache/load))]
     (go
      (loop [message (<! filename-channel)]
        (if (= message :stop)
          (do
            (apply await agent-pool)
-           (cache/save cache-state)
+           (if-not disable-cache (cache/save cache-state))
            (>! fingerprint-channel :stop)
            (>! error-channel :stop))
          (let [agent-index (rem (Math/abs (.hashCode #^String message)) thread-count)
@@ -89,5 +84,16 @@ It is otherwise identical to generate-fingerprint, which it calls."
            (send
             selected-agent
             agent-generate-fingerprint
-            message fingerprint-channel error-channel cache-state)
+            message fingerprint-channel error-channel (if disable-cache
+                                                        (fn [filename id]
+                                                          {:fingerprint (FDI/fingerprint filename)
+                                                           :size (.length (File. filename))
+                                                           :id id})
+                                                        (fn [filename id]
+                                                          (cache/find-if-absent-put
+                                                           cache-state id
+                                                           #(hash-map
+                                                             :fingerprint (FDI/fingerprint filename)
+                                                             :size (.length (File. filename))
+                                                             :id id)))))
            (recur (<! filename-channel))))))))

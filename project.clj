@@ -6,7 +6,8 @@
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/core.async "0.1.267.0-0d7780-alpha"]
                  [org.clojure/java.jdbc "0.3.2"]
-                 [org.xerial/sqlite-jdbc "3.7.2"]]
+                 [org.xerial/sqlite-jdbc "3.7.2"]
+                 [commons-cli/commons-cli "1.2"]]
   :source-paths ["src/clj"]
   :warn-on-reflection true
   :java-source-paths ["src/java"]

@@ -34,40 +34,41 @@
   (:require [clojure.core.async :as async :refer [go >!! <! >!]]))
 
 (defn- similar? [{#^bytes first-print :fingerprint fn1 :filename :as fp1}
-                 {#^bytes second-print :fingerprint fn2 :filename :as fp2}]
-  (fdi.FDI/isSimilar first-print second-print))
+                 {#^bytes second-print :fingerprint fn2 :filename :as fp2}
+                 tolerance]
+  (fdi.FDI/isSimilar first-print second-print tolerance))
 
 (defn- fingerprint-from-file-named [filename]
   {:filename filename
    :fingerprint (fdi.FDI/fingerprint filename)
    :id (fdi.FDI/idString filename)})
 
-(defn- duplicates-of [ref-print all-prints]
+(defn- duplicates-of [ref-print tolerance all-prints]
   (loop [prints all-prints
          duplicates '()]
     (if (empty? prints)
       duplicates
       (recur (rest prints)
-             (if (similar? ref-print (first prints))
+             (if (similar? ref-print (first prints) tolerance)
                (cons (first prints) duplicates)
                duplicates)))))
 
-(defn- finder [prints-atom duplicates-channel]
+(defn- finder [prints-atom tolerance duplicates-channel]
   (loop [[ref-print & prints] (swap! prints-atom rest)]
     (if (nil? prints)
       :finished
-      (let [dups (duplicates-of ref-print prints)]
+      (let [dups (duplicates-of ref-print tolerance prints)]
         (if-not (empty? dups)
           (>!! duplicates-channel (cons ref-print dups)))
         (recur (swap! prints-atom rest))))))
 
 
 
-(defn start [analyser-channel duplicates-channel]
+(defn start [analyser-channel duplicates-channel {:keys [agent-count tolerance]}]
   (go
    (let [fingerprints (atom (cons nil (<! analyser-channel)))
-         thread-count (-> clojure.lang.Agent/pooledExecutor .getCorePoolSize)
-         agent-pool (map (fn [_] (send (agent fingerprints) finder duplicates-channel)) (range thread-count))]
+         thread-count (or agent-count (-> clojure.lang.Agent/pooledExecutor .getCorePoolSize))
+         agent-pool (map (fn [_] (send (agent fingerprints) finder tolerance duplicates-channel)) (range thread-count))]
      (apply await agent-pool)
      (>! duplicates-channel :stop))))
 
