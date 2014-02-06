@@ -7,3 +7,8 @@ pom.xml.asc
 *.class
 /.lein-*
 /.nrepl-port
+cache.sqlite
+**/*.so
+**/*.dylib
+**/*.dylib.dSYM
+src/c/fdi_FDI.h
