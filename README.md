@@ -60,7 +60,7 @@ fdi.core/scan, e.g.:
     (fdi/scan
         "/base/directory/for/images"
         duplicate-handler-fn
-        {:disable-cache false :agents-count 5 :tolerance 5})
+        {:disable-cache false :agent-count 5 :tolerance 5})
 
 # Implementation
 
