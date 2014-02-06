@@ -54,6 +54,14 @@ each fingerprint is a hash conforming to the following structure:
       :id          String,
       :filename    String }
 
+Overrides to the defaults can be provided with the arity-3 version of
+fdi.core/scan, e.g.:
+
+    (fdi/scan
+        "/base/directory/for/images"
+        duplicate-handler-fn
+        {:disable-cache false :agents-count 5 :tolerance 5})
+
 # Implementation
 
 This application is written in a mixture of Clojure (mainly), Java and
