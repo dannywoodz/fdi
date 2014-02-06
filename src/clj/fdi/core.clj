@@ -54,21 +54,27 @@
 (defn- fingerprint-generation-failed [{filename :filename}]
   (println "Couldn't generate fingerprint for" filename))
 
-(defn scan [base-directory duplicate-handler {:keys [tolerance agent-count disable-cache]}]
-  (let [error-channel (chan)
-        filename-channel (chan)
-        fingerprint-channel (chan)
-        analyser-channel (chan)
-        duplicates-channel (chan)
-        directory-scanner (scanner/scan base-directory filename-channel)
-        error-reporter (error/start error-channel fingerprint-generation-failed)
-        cache-builder (builder/start filename-channel fingerprint-channel error-channel {:agent-count agent-count :disable-cache disable-cache})
-        collator (collator/start fingerprint-channel analyser-channel)
-        analyser (analyser/start analyser-channel duplicates-channel {:agent-count agent-count :tolerance tolerance})]
-    (loop [message (<!! duplicates-channel)]
-      (when-not (= message :stop)
-        (duplicate-handler message)
-        (recur (<!! duplicates-channel))))))
+(defn scan
+  ([base-directory duplicate-handler]
+    (scan base-directory duplicate-handler
+      {:tolerance 3
+      :agent-count (-> clojure.lang.Agent/pooledExecutor .getCorePoolSize)
+      :disable-cache false}))
+  ([base-directory duplicate-handler {:keys [tolerance agent-count disable-cache]}]
+    (let [error-channel (chan)
+          filename-channel (chan)
+          fingerprint-channel (chan)
+          analyser-channel (chan)
+          duplicates-channel (chan)
+          directory-scanner (scanner/scan base-directory filename-channel)
+          error-reporter (error/start error-channel fingerprint-generation-failed)
+          cache-builder (builder/start filename-channel fingerprint-channel error-channel {:agent-count agent-count :disable-cache disable-cache})
+          collator (collator/start fingerprint-channel analyser-channel)
+          analyser (analyser/start analyser-channel duplicates-channel {:agent-count agent-count :tolerance tolerance})]
+      (loop [message (<!! duplicates-channel)]
+        (when-not (= message :stop)
+          (duplicate-handler message)
+          (recur (<!! duplicates-channel)))))))
 
 (defn- usage [options message]
   (-> (HelpFormatter.)
