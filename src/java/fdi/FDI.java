@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.DataOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -94,13 +95,20 @@ public class FDI
 	String.format("Both fingerprint arrays must be the same size.  Got %d vs. %d",
 		      first.length, second.length)
 	);
-    
-    int error = 0;
-    int cutoff = first.length * tolerance;
-    for ( int i = 0 ; error < cutoff && i < first.length ; i++ )
+
+    if ( tolerance == 0 )
     {
-      error += Math.abs((first[i] & 0xff) - (second[i] & 0xff));
+      return Arrays.equals(first, second);
     }
-    return error < cutoff;
+    else
+    {
+      int error = 0;
+      int cutoff = first.length * tolerance;
+      for ( int i = 0 ; error < cutoff && i < first.length ; i++ )
+      {
+	error += Math.abs((first[i] & 0xff) - (second[i] & 0xff));
+      }
+      return error < cutoff;
+    }
   }
 }
