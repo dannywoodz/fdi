@@ -72,8 +72,9 @@ Clojure is for orchestration and concurrency, with Java for
 performance-sensitive code and C for access to ImageMagick.
 
 This application has been tested against a directory tree containing in
-excess of 200,000 images.  A clean scan on a 3.4GHz Intel Core i7 2600K
-running Linux takes ~1h20m.
+excess of 200,000 images.  A clean scan on a 3.4GHz Intel Core i7 2600K,
+running Gentoo Linux, reading from a 7200rpm spinning-platter disk takes
+~1h20m.
 
 # TODO
 
