@@ -34,17 +34,8 @@ import java.security.NoSuchAlgorithmException;
 public class FDI
 {
   private static final native void init();
-  private static final MessageDigest sha1;
 
   static {
-    try
-    {
-      sha1 = MessageDigest.getInstance("SHA-1");
-    }
-    catch(NoSuchAlgorithmException nsae)
-    {
-      throw new RuntimeException(nsae);
-    }
     System.loadLibrary("fdi" + System.getProperty("sun.arch.data.model"));
     init();
   }
@@ -52,6 +43,16 @@ public class FDI
   private static final ThreadLocal<MessageDigest> generator = new ThreadLocal<MessageDigest>() {
     @Override
     protected MessageDigest initialValue() {
+      MessageDigest sha1 = null;
+      try
+      {
+	System.err.println("Retrieving MessageDigest on thread " + Thread.currentThread().getId());
+	sha1 = MessageDigest.getInstance("SHA-1");
+      }
+      catch(NoSuchAlgorithmException nsae)
+      {
+	throw new RuntimeException(nsae);
+      }
       return sha1;
     }
   };
