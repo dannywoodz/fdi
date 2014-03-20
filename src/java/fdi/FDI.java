@@ -39,23 +39,22 @@ public class FDI
     System.loadLibrary("fdi" + System.getProperty("sun.arch.data.model"));
     init();
   }
-  
+
   private static final ThreadLocal<MessageDigest> generator = new ThreadLocal<MessageDigest>() {
-    @Override
-    protected MessageDigest initialValue() {
-      MessageDigest sha1 = null;
-      try
-      {
-	System.err.println("Retrieving MessageDigest on thread " + Thread.currentThread().getId());
-	sha1 = MessageDigest.getInstance("SHA-1");
+      @Override
+      protected MessageDigest initialValue() {
+        MessageDigest sha1 = null;
+        try
+        {
+          sha1 = MessageDigest.getInstance("SHA-1");
+        }
+        catch(NoSuchAlgorithmException nsae)
+        {
+          throw new RuntimeException(nsae);
+        }
+        return sha1;
       }
-      catch(NoSuchAlgorithmException nsae)
-      {
-	throw new RuntimeException(nsae);
-      }
-      return sha1;
-    }
-  };
+    };
 
   public static final native byte[] fingerprint(String filename) throws java.io.IOException;
   
@@ -93,9 +92,9 @@ public class FDI
   {
     if ( first.length != second.length )
       throw new IllegalArgumentException(
-	String.format("Both fingerprint arrays must be the same size.  Got %d vs. %d",
-		      first.length, second.length)
-	);
+        String.format("Both fingerprint arrays must be the same size.  Got %d vs. %d",
+                      first.length, second.length)
+        );
 
     if ( tolerance == 0 )
     {
@@ -107,7 +106,7 @@ public class FDI
       int cutoff = first.length * tolerance;
       for ( int i = 0 ; error < cutoff && i < first.length ; i++ )
       {
-	error += Math.abs((first[i] & 0xff) - (second[i] & 0xff));
+        error += Math.abs((first[i] & 0xff) - (second[i] & 0xff));
       }
       return error < cutoff;
     }
