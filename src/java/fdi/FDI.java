@@ -64,13 +64,13 @@ public class FDI
        plant.  The best way would probably be to generate a digest of the file, but I don't
        want to have to read every bloody byte of every file off the disk to do this in order
        to determine whether or not it needs to be loaded.
-       For the purposes of this system, 'unique enough' is a hyphen-separated string containing
-       the SHA1 of the filename, as well as the last modification time and length of the file.
+       For the purposes of this system, 'unique enough' is a SHA1 of a hyphen-separated string
+       containing the filename, the last modification time and length of the file.
        It's certainly possible to get a false hit with this (copying over an existing file with
        another that happens to have the same length and a doctored modification time), but it's
        a remote enough possibility for me not to care.
        One possibility that I've ruled out (after having done it) is going native to get more
-       detailed information from the POSIX stat syscall, but the inode number is synthetic
+       detailed information from the POSIX stat syscall: the inode number is synthetic
        when dealing with files on FAT filesystems, and inconsistent across remounts */
     
     File file = new File(filename);
