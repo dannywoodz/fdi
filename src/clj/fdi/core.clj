@@ -35,6 +35,7 @@
             [fdi.cache-builder :as builder]
             [fdi.collator :as collator]
             [fdi.analyser :as analyser])
+  (:use [clojure.tools.logging :only (error)])
   (:import [org.apache.commons.cli Options GnuParser HelpFormatter]))
 
 (defn- duplicate-report [a-duplicate-report]
@@ -52,9 +53,9 @@
   (println (duplicate-report a-vector)))
 
 (defn- fingerprint-generation-failed [{filename :filename}]
-  (println "Couldn't generate fingerprint for" filename))
+  (error "Couldn't generate fingerprint for" filename))
 
-(def ^{:private true} +default-options+ {:tolerance 3 :disable-cache false :agent-count (-> clojure.lang.Agent/pooledExecutor .getCorePoolSize)})
+(def ^{:private true} +default-options+ {:tolerance 3 :disable-cache false :cache-file "cache.sqlite" :agent-count (-> clojure.lang.Agent/pooledExecutor .getCorePoolSize)})
 
 (defn scan
   ([base-directory duplicate-handler]
@@ -84,9 +85,11 @@
   (let [options (doto (Options.)
                   (.addOption "n" "no-cache" false "disable loading/updating the cache")
                   (.addOption "t" "tolerance" true "set a tolerance for identifying matches (default is 3)")
-                  (.addOption "a" "agents" true "set the number of agents to use (default #CPUs+2)"))
+                  (.addOption "a" "agents" true "set the number of agents to use (default #CPUs+2)")
+                  (.addOption "c" "cache-file" true "specify the file for loading/saving the cache"))
         command-line (-> (GnuParser.) (.parse options (.toArray (or args '()) (make-array String 0))))
         disable-cache (.hasOption command-line "n")
+        cache-file (.getOptionValue command-line "c" (:cache-file +default-options+))
         tolerance (Integer/parseInt (.getOptionValue command-line "t" (str (:tolerance +default-options+))))
         agent-count (Integer/parseInt (.getOptionValue command-line "a" (str (:agent-count +default-options+))))
         base-directory (first (.getArgList command-line))]
@@ -96,4 +99,6 @@
       (usage options "--agent-count must be > 0"))
     (if (< tolerance 0)
       (usage options "--tolerance must be >= 0"))
-    (scan base-directory duplicate-identified {:tolerance tolerance :agent-count agent-count :disable-cache disable-cache})))
+    (scan base-directory
+          duplicate-identified
+          {:tolerance tolerance :agent-count agent-count :disable-cache disable-cache :cache-file cache-file})))

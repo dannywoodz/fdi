@@ -5,30 +5,34 @@
   (:use [clojure.tools.logging :only (debug)])
   (:refer-clojure :exclude [load]))
 
-(defn load []
-  (Class/forName "org.sqlite.JDBC")
-  (let [connection (DriverManager/getConnection "jdbc:sqlite::memory:")
-        create (.createStatement connection)
-        restore (.createStatement connection)]
-    (try
-      (do
-        (.executeUpdate create "CREATE TABLE IF NOT EXISTS cache(id TEXT PRIMARY KEY NOT NULL, fingerprint BLOB NOT NULL, size INTEGER NOT NULL)")
-
-        (when (-> (File. "cache.sqlite") .exists)
-          (debug "Cloning existing cache.sqlite into in-memory DB")
-          (try
-            (.executeUpdate restore "restore from cache.sqlite")
-            (finally (.close restore)))))
-      (finally
-        (.close create)))
-    {:db connection}))
+(defn load
+  ([] (load "cache.sqlite"))
+  ([cache-filename]
+     (Class/forName "org.sqlite.JDBC")
+     (let [connection (DriverManager/getConnection "jdbc:sqlite::memory:")
+           create (.createStatement connection)
+           restore (.createStatement connection)]
+       (try
+         (do
+           (.executeUpdate create "CREATE TABLE IF NOT EXISTS cache(id TEXT PRIMARY KEY NOT NULL, fingerprint BLOB NOT NULL, size INTEGER NOT NULL)")
+           (if (-> (File. cache-filename) .exists)
+             (try
+               (do
+                 (debug "Restoring persisted cache from" cache-filename)
+                 (.executeUpdate restore (str "restore from " cache-filename)))
+               (finally (.close restore)))
+             (debug "Starting with a clean cache")))
+         (finally
+           (.close create)))
+       {:db connection
+        :db-file cache-filename})))
 
 (defn save
   ([db] (save db true))
-  ([{:keys [db] :as cache} close-after-save]
+  ([{:keys [db db-file] :as cache} close-after-save]
      (let [backup (.createStatement db)]
        (try
-         (.executeUpdate backup "backup to cache.sqlite")
+         (.executeUpdate backup (str "backup to " db-file))
          (finally (.close backup))))
      (if close-after-save (.close db))))
 

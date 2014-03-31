@@ -43,6 +43,7 @@
 (ns fdi.cache-builder
   (:require [clojure.core.async :as async :refer [go chan alts! >!! >! <!]]
             [fdi.db-cache :as cache])
+  (:use [clojure.tools.logging :only (error)])
   (:import [java.io File]
            [fdi FDI]))
 
@@ -55,7 +56,7 @@ with no arguments if an error occurs.  Should never itself throw an error."
           fingerprint (cache-lookup-fn filename id)]
       (>!! success-channel (assoc fingerprint :filename filename)))
     (catch Exception e
-      (println e)
+      (error e)
       (>!! error-channel {:filename filename :id :error :fingerprint :error :error e}))))
 
 (defn- agent-generate-fingerprint [state filename success-channel error-channel cache-lookup-fn]
@@ -64,13 +65,13 @@ The first argument, unused, is the state of the agent when the call is made.
 It is otherwise identical to generate-fingerprint, which it calls."
   (generate-fingerprint filename success-channel error-channel cache-lookup-fn))
 
-(defn start [filename-channel fingerprint-channel error-channel {:keys [agent-count disable-cache]}]
+(defn start [filename-channel fingerprint-channel error-channel {:keys [agent-count disable-cache cache-file]}]
   ;; Starts reading from filename-channel, generating image fingerprints to be
   ;; sent to fingerprint-channel.  error-channel is written to for files
   ;; which cannot be read.
   (let [thread-count (or agent-count (-> clojure.lang.Agent/pooledExecutor .getCorePoolSize))
         agent-pool (map #(agent %) (range thread-count))
-        cache-state (if disable-cache nil (cache/load))]
+        cache-state (if disable-cache nil (cache/load cache-file))]
     (go
      (loop [message (<! filename-channel)]
        (if (= message :stop)
