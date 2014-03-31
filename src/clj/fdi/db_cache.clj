@@ -2,6 +2,7 @@
   (:require [clojure.java.jdbc :as db])
   (:import [java.sql DriverManager]
            [java.io File])
+  (:use [clojure.tools.logging :only (debug)])
   (:refer-clojure :exclude [load]))
 
 (defn load []
@@ -11,10 +12,10 @@
         restore (.createStatement connection)]
     (try
       (do
-        (println "Creating cache table")
         (.executeUpdate create "CREATE TABLE IF NOT EXISTS cache(id TEXT PRIMARY KEY NOT NULL, fingerprint BLOB NOT NULL, size INTEGER NOT NULL)")
 
-        (if (-> (File. "cache.sqlite") .exists)
+        (when (-> (File. "cache.sqlite") .exists)
+          (debug "Cloning existing cache.sqlite into in-memory DB")
           (try
             (.executeUpdate restore "restore from cache.sqlite")
             (finally (.close restore)))))
@@ -31,14 +32,14 @@
          (finally (.close backup))))
      (if close-after-save (.close db))))
 
-(defn- cache-hit [{id :id :as record}]
-  (println "Cache HIT for" id)
+(defn- cache-hit [record]
+  (debug "Cache HIT for" (:id record))
   record)
 
 (defn- cache-miss [connection id genfn]
+  (debug "Cache MISS for" id)
   (let [insert (.prepareStatement connection "insert into cache(id,fingerprint,size) values(?,?,?)")
         {fingerprint :fingerprint size :size :as record} (genfn)]
-    (println "Cache MISS for" id)
     (try
       (do
         (.setString insert 1 id)
