@@ -30,6 +30,7 @@
 (defn save
   ([db] (save db true))
   ([{:keys [db db-file] :as cache} close-after-save]
+     (debug "Persisting cache to" db-file)
      (let [backup (.createStatement db)]
        (try
          (.executeUpdate backup (str "backup to " db-file))
