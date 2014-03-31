@@ -36,8 +36,9 @@ as a binary blob.
 Supported command line options:
 
   * --no-cache -- disable loading or updating the cache.
-  * --tolerance -- adjust the 'fudge factor' observed in fdi/FDI.java
-  * --agents -- set the size of the agent pool used for fingerprint generation and analysis.
+  * --cache-file[=cache.sqlite] -- with caching enabled (the default), write the cache to this file.
+  * --tolerance[=3] -- adjust the 'fudge factor' observed in fdi/FDI.java
+  * --agents=[#CPUs+2] -- set the size of the agent pool used for fingerprint generation and analysis.
 
 ## As a library:
 
@@ -78,13 +79,7 @@ running Gentoo Linux, reading from a 7200rpm spinning-platter disk takes
 
 # TODO
 
-## Fingerprint caching
-
-This is currently handled via SQLite, but needs re-thinking.  In particular, the cache is loaded in its entirety up-front, which can actually take a significant amount of time if it has accumulated a large amount of data.
-
-A better approach would be to clone the on-disk file into an in-memory database and run straight SQL against that.
-
-## New Command line options
+## Possible New Command line options
 
 * --auto -- RISKY! -- automatically delete any images identified as duplicates.
 
