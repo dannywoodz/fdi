@@ -1,5 +1,4 @@
 (ns fdi.db-cache
-  (:require [clojure.java.jdbc :as db])
   (:import [java.sql DriverManager]
            [java.io File])
   (:use [clojure.tools.logging :only (debug)])
