@@ -33,7 +33,6 @@
             [fdi.scanner :as scanner]
             [fdi.error-reporter :as error]
             [fdi.cache-builder :as builder]
-            [fdi.collator :as collator]
             [fdi.analyser :as analyser])
   (:use [clojure.tools.logging :only (error)])
   (:import [org.apache.commons.cli Options GnuParser HelpFormatter]))
@@ -70,8 +69,7 @@
            directory-scanner (scanner/scan base-directory filename-channel)
            error-reporter (error/start error-channel fingerprint-generation-failed)
            cache-builder (builder/start filename-channel fingerprint-channel error-channel (dissoc full-config :tolerance))
-           collator (collator/start fingerprint-channel analyser-channel)
-           analyser (analyser/start analyser-channel duplicates-channel (dissoc full-config :disable-cache))]
+           analyser (analyser/start fingerprint-channel duplicates-channel (dissoc full-config :disable-cache))]
        (loop [message (<!! duplicates-channel)]
          (when-not (= message :stop)
            (duplicate-handler message)
