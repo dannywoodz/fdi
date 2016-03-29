@@ -45,6 +45,7 @@
             [fdi.db-cache :as cache])
   (:use [clojure.tools.logging :only (error)])
   (:import [java.io File]
+           [java.util.concurrent Executors]
            [fdi FDI]))
 
 (defn generate-fingerprint [generator #^String filename success-channel error-channel]
@@ -74,25 +75,29 @@ It is otherwise identical to generate-fingerprint, which it calls."
   (if (nil? cache-state)
     #'fingerprint
     (fn [filename id]
-      (cache/find-if-absent-put
-       cache-state id
-       (fn [] (fingerprint filename id))))))
+      (locking cache-state 
+        (cache/find-if-absent-put
+         cache-state id
+         (fn [] (fingerprint filename id)))))))
 
 (defn start [filename-channel fingerprint-channel error-channel {:keys [agent-count disable-cache cache-file]}]
   ;; Starts reading from filename-channel, generating image fingerprints to be
   ;; sent to fingerprint-channel.  error-channel is written to for files
   ;; which cannot be read.
   (let [cache-state (if disable-cache nil (cache/load cache-file))
-        fingerprinter (fingerprint-generator cache-state)]
+        fingerprinter (fingerprint-generator cache-state)
+        pool (Executors/newFixedThreadPool agent-count)]
     (go
       (loop [filename (<! filename-channel)
-             agents []]
+             futures []]
        (if (= filename :stop)
          (do
-           (apply await agents)
-           (if-not disable-cache (cache/save cache-state))
+           (doseq [f futures] (.get f))
+           (.shutdown pool)
+           (if-not disable-cache (locking cache-state (cache/save cache-state)))
            (>! fingerprint-channel :stop)
            (>! error-channel :stop))
          (recur (<! filename-channel)
-                (conj agents (send (agent nil) agent-generate-fingerprint fingerprinter filename fingerprint-channel error-channel))))))))
+                (filter #(not (.isDone %))
+                        (conj futures (.submit pool #^Callable (fn [] (generate-fingerprint fingerprinter filename fingerprint-channel error-channel)))))))))))
 
