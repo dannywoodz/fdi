@@ -47,54 +47,52 @@
   (:import [java.io File]
            [fdi FDI]))
 
-(defn generate-fingerprint [#^String filename success-channel error-channel cache-lookup-fn]
+(defn generate-fingerprint [generator #^String filename success-channel error-channel]
   "Generates a byte-array fingerprint for the image file in the given filename.
 Calls the success-callback with the fingerprint on successor, or error-callback
 with no arguments if an error occurs.  Should never itself throw an error."
   (try
     (let [id (FDI/idString filename)
-          fingerprint (cache-lookup-fn filename id)]
+          fingerprint (generator filename id)]
       (>!! success-channel (assoc fingerprint :filename filename)))
     (catch Exception e
       (error e)
       (>!! error-channel {:filename filename :id :error :fingerprint :error :error e}))))
 
-(defn- agent-generate-fingerprint [state filename success-channel error-channel cache-lookup-fn]
+(defn- agent-generate-fingerprint [state generator filename success-channel error-channel]
   "Generates a byte-array fingerprint for the image file in the given filename.
 The first argument, unused, is the state of the agent when the call is made.
 It is otherwise identical to generate-fingerprint, which it calls."
-  (generate-fingerprint filename success-channel error-channel cache-lookup-fn))
+  (generate-fingerprint generator filename success-channel error-channel))
+
+(defn- fingerprint [filename id]
+  (hash-map :fingerprint (FDI/fingerprint filename)
+            :size (.length (File. filename))
+            :id id))
+
+(defn- fingerprint-generator [cache-state]
+  (if (nil? cache-state)
+    #'fingerprint
+    (fn [filename id]
+      (cache/find-if-absent-put
+       cache-state id
+       (fn [] (fingerprint filename id))))))
 
 (defn start [filename-channel fingerprint-channel error-channel {:keys [agent-count disable-cache cache-file]}]
   ;; Starts reading from filename-channel, generating image fingerprints to be
   ;; sent to fingerprint-channel.  error-channel is written to for files
   ;; which cannot be read.
-  (let [thread-count (or agent-count (-> clojure.lang.Agent/pooledExecutor .getCorePoolSize))
-        agent-pool (map #(agent %) (range thread-count))
-        cache-state (if disable-cache nil (cache/load cache-file))]
+  (let [cache-state (if disable-cache nil (cache/load cache-file))
+        fingerprinter (fingerprint-generator cache-state)]
     (go
-     (loop [message (<! filename-channel)]
-       (if (= message :stop)
+      (loop [filename (<! filename-channel)
+             agents []]
+       (if (= filename :stop)
          (do
-           (apply await agent-pool)
+           (apply await agents)
            (if-not disable-cache (cache/save cache-state))
            (>! fingerprint-channel :stop)
            (>! error-channel :stop))
-         (let [agent-index (rem (Math/abs (.hashCode #^String message)) thread-count)
-               selected-agent (nth agent-pool agent-index)]
-           (send
-            selected-agent
-            agent-generate-fingerprint
-            message fingerprint-channel error-channel (if disable-cache
-                                                        (fn [filename id]
-                                                          {:fingerprint (FDI/fingerprint filename)
-                                                           :size (.length (File. filename))
-                                                           :id id})
-                                                        (fn [filename id]
-                                                          (cache/find-if-absent-put
-                                                           cache-state id
-                                                           #(hash-map
-                                                             :fingerprint (FDI/fingerprint filename)
-                                                             :size (.length (File. filename))
-                                                             :id id)))))
-           (recur (<! filename-channel))))))))
+         (recur (<! filename-channel)
+                (conj agents (send (agent nil) agent-generate-fingerprint fingerprinter filename fingerprint-channel error-channel))))))))
+
