@@ -75,10 +75,9 @@ It is otherwise identical to generate-fingerprint, which it calls."
   (if (nil? cache-state)
     #'fingerprint
     (fn [filename id]
-      (locking cache-state 
-        (cache/find-if-absent-put
-         cache-state id
-         (fn [] (fingerprint filename id)))))))
+      (cache/find-if-absent-put
+       cache-state id
+       (fn [] (fingerprint filename id))))))
 
 (defn start [filename-channel fingerprint-channel error-channel {:keys [agent-count disable-cache cache-file]}]
   ;; Starts reading from filename-channel, generating image fingerprints to be
@@ -90,14 +89,15 @@ It is otherwise identical to generate-fingerprint, which it calls."
     (go
       (loop [filename (<! filename-channel)
              futures []]
-       (if (= filename :stop)
-         (do
-           (doseq [f futures] (.get f))
-           (.shutdown pool)
-           (if-not disable-cache (locking cache-state (cache/save cache-state)))
-           (>! fingerprint-channel :stop)
-           (>! error-channel :stop))
-         (recur (<! filename-channel)
-                (filter #(not (.isDone %))
-                        (conj futures (.submit pool #^Callable (fn [] (generate-fingerprint fingerprinter filename fingerprint-channel error-channel)))))))))))
+        (if (= filename :stop)
+          (do
+            (doseq [f futures] (.get f))
+            (.shutdown pool)
+            (if-not disable-cache (locking cache-state (cache/save cache-state)))
+            (>! fingerprint-channel :stop)
+            (>! error-channel :stop))
+          (recur (<! filename-channel)
+                 (doall
+                  (filter #(not (.isDone %))
+                          (conj futures (.submit pool #^Callable (fn [] (generate-fingerprint fingerprinter filename fingerprint-channel error-channel))))))))))))
 
