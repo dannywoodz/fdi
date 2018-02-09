@@ -29,7 +29,7 @@
 #include <string.h>
 #include <errno.h>
 #include <openssl/sha.h>
-#include <wand/MagickWand.h>
+#include <MagickWand/MagickWand.h>
 
 
 JNIEXPORT void JNICALL Java_fdi_FDI_init(JNIEnv *env, jclass type)
