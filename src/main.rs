@@ -32,33 +32,40 @@ impl std::cmp::PartialEq for Fingerprint {
     }
 }
 
-fn fingerprint(entry: &DirEntry) -> Fingerprint {
-    let mut buffer = [0 as u8;48];
-    let filename = entry.path().to_str().unwrap();
-    let c_filename = CString::new(filename).unwrap();
-    let result = unsafe {
-        fdi_fingerprint(c_filename.as_ptr(), buffer.as_mut_ptr() as *mut c_char)
-    };
-    Fingerprint{
-        path: filename.to_owned(),
-        fingerprint: buffer,
-        error: result < 0,
+fn fingerprint(entry: &DirEntry) -> Option<Fingerprint> {
+    match entry.path().to_str() {
+        Some(filename) => {
+            let mut buffer = [0 as u8;48];
+            let c_filename = CString::new(filename).unwrap();
+            let result = unsafe {
+                fdi_fingerprint(c_filename.as_ptr(), buffer.as_mut_ptr() as *mut c_char)
+            };
+            Some(Fingerprint{
+                path: filename.to_owned(),
+                fingerprint: buffer,
+                error: result < 0,
+            })
+        },
+        None => None
     }
 }
 
-fn is_similar(f1: &Fingerprint, f2: &Fingerprint) -> bool {
-    let tolerance = 5;
-    let mut error = 0;
-    let cutoff = (f1.fingerprint.len() * tolerance) as i32;
-    for it in f1.fingerprint.iter().zip(f2.fingerprint.iter()) {
-        let (v1, v2) = it;
-        error = error + (*v1 as i32 - *v2 as i32).abs()
+impl Fingerprint {
+    fn is_similar(&self, o: &Fingerprint) -> bool {
+        let tolerance = 5;
+        let mut error = 0;
+        let cutoff = (self.fingerprint.len() * tolerance) as i32;
+        for it in self.fingerprint.iter().zip(o.fingerprint.iter()) {
+            let (v1, v2) = it;
+            let v1 = *v1 as i32;
+            let v2 = *v2 as i32;
+            error = error + (v1 - v2).abs()
+        }
+        error < cutoff
     }
-    error < cutoff
 }
 
 fn main() {
-    let directory = std::env::args().nth(1).expect("Missing directory");
 
     let is_hidden = | entry: &DirEntry | -> bool {
         entry.file_name()
@@ -80,14 +87,19 @@ fn main() {
         fdi_init();
     }
 
-    let entries : Vec<DirEntry> = WalkDir::new(directory).into_iter()
-        .filter_entry(|e| !is_hidden(e) && (e.path().is_dir()) || is_image_file(e))
-        .map(|r| r.ok().unwrap())
-        .filter(|e| !e.path().is_dir())
+    let entries : Vec<DirEntry> = std::env::args()
+        .flat_map(|directory| {
+            WalkDir::new(directory).into_iter()
+                .filter_entry(|e| !is_hidden(e) && (e.path().is_dir()) || is_image_file(e))
+                .map(|r| r.ok().unwrap())
+                .filter(|e| !e.path().is_dir())
+        })
         .collect();
 
     let prints : Vec<Fingerprint> = entries.par_iter()
         .map(|e| fingerprint(&e))
+        .filter(|o| o.is_some())
+        .map(|o| o.unwrap())
         .collect();
     let pref = &prints;
 
@@ -97,7 +109,7 @@ fn main() {
     prints.par_iter().for_each(move |print| {
         for candidate in pref {
                 if !candidate.error && candidate != print {
-                    if is_similar(&print, &candidate) {
+                    if print.is_similar(&candidate) {
                         let mut map = view.lock().unwrap();
                         if !map.contains_key(&print.path) {
                             map.insert(print.path.clone(), vec!());
@@ -109,17 +121,17 @@ fn main() {
         }
     });
 
-    let similar = similar.lock().unwrap();
-    
-    // let similar = {
-    //     let mut similar = similar.lock().unwrap();
-    //     let keys = similar.keys().map(|e| e.clone()).collect::<HashSet<String>>();
-        
-    //     for bucket in similar.values_mut() {
-    //         bucket.retain(|s| !keys.contains(s));
-    //     }
-    //     similar
-    // };
+    let similar = {
+        let mut similar = similar.lock().unwrap();
+        let mut keys : HashSet<String> = HashSet::new();
+        for (_key,bucket) in similar.iter_mut() {
+            bucket.retain(|s| !keys.contains(s));
+            for k in bucket {
+                keys.insert(k.clone());
+            }
+        }
+        similar
+    };
 
     similar.iter()
         .filter(|entry| {
