@@ -2,14 +2,17 @@ extern crate walkdir;
 extern crate rayon;
 extern crate regex;
 extern crate libc;
+extern crate getopts;
 
 #[allow(unused_imports)]
 use rayon::prelude::*;
 
+use std::env;
 use std::ffi::CString;
 use std::os::raw::c_char;
 use std::collections::{HashMap,HashSet};
 use std::sync::{Mutex,Arc};
+use getopts::{Options,Fail};
 use walkdir::{DirEntry, WalkDir};
 use regex::Regex;
 
@@ -51,22 +54,47 @@ fn fingerprint(entry: &DirEntry) -> Option<Fingerprint> {
 }
 
 impl Fingerprint {
-    fn is_similar(&self, o: &Fingerprint) -> bool {
-        let tolerance = 5;
+    fn is_similar(&self, o: &Fingerprint, tolerance: u32) -> bool {
         let mut error = 0;
-        let cutoff = (self.fingerprint.len() * tolerance) as i32;
+        let cutoff = self.fingerprint.len() as u32 * tolerance;
         for it in self.fingerprint.iter().zip(o.fingerprint.iter()) {
             let (v1, v2) = it;
             let v1 = *v1 as i32;
             let v2 = *v2 as i32;
-            error = error + (v1 - v2).abs()
+            error = error + (v1 - v2).abs() as u32;
         }
         error < cutoff
     }
 }
 
-fn main() {
+fn usage(prog_name: &str, opts: &Options, err: Option<Fail>, exit_code: i32) -> ! {
+    let brief = format!("Usage: {} [--threshold=5] dir-1 [..dir-n]", prog_name);
+    match err {
+        Some(f) => println!("{}", f),
+        None => ()
+    };
+    print!("{}", opts.usage(&brief));
+    std::process::exit(exit_code);
+}
 
+fn main() {
+    let args : Vec<String> = env::args().collect();
+    let mut opts = Options::new();
+    opts.optopt("t", "threshold", "threshold for determining image similarity (default=5)", "INTEGER");
+    let matches = match opts.parse(&args[1..]) {
+        Ok(m) => m,
+        Err(f) => usage(&args[0], &opts, Some(f), -1)
+    };
+    let directories = &matches.free;
+
+    if directories.is_empty() {
+        usage(&args[0], &opts, None, -2)
+    }
+    
+    let threshold = match matches.opt_str("t") {
+        Some(value) => value.parse::<u32>().unwrap(),
+        None => 5
+    };
     let is_hidden = | entry: &DirEntry | -> bool {
         entry.file_name()
             .to_str()
@@ -74,7 +102,7 @@ fn main() {
             .unwrap_or(false)
     };
 
-    let img_extension_rx = Regex::new(r"\.jpg$").unwrap();
+    let img_extension_rx = Regex::new(r"\.(?:jpg|jpeg|png)$").unwrap();
 
     let is_image_file = | entry: &DirEntry | -> bool {
         match entry.file_name().to_str() {
@@ -87,7 +115,7 @@ fn main() {
         fdi_init();
     }
 
-    let entries : Vec<DirEntry> = std::env::args()
+    let entries : Vec<DirEntry> = directories.iter()
         .flat_map(|directory| {
             WalkDir::new(directory).into_iter()
                 .filter_entry(|e| !is_hidden(e) && (e.path().is_dir()) || is_image_file(e))
@@ -109,7 +137,7 @@ fn main() {
     prints.par_iter().for_each(move |print| {
         for candidate in pref {
                 if !candidate.error && candidate != print {
-                    if print.is_similar(&candidate) {
+                    if print.is_similar(&candidate, threshold) {
                         let mut map = view.lock().unwrap();
                         if !map.contains_key(&print.path) {
                             map.insert(print.path.clone(), vec!());

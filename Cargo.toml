@@ -11,4 +11,4 @@ walkdir = "2"
 rayon = "0.9"
 regex = "0.2"
 libc = "0.2"
-
+getopts = "0.2"
