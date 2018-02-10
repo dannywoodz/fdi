@@ -23,6 +23,15 @@ hand, you may need to alter `build.rs`, at least until I get around to auto-dete
 
 Aside from that minor niggle, `cargo build` handle everything else.
 
+## TODOs
+
+Fingerprint scanning and generation is probably about as fast as it's likely to get, but the identification of duplicates is extremely
+clumsy and is doing way more than it needs to.  This is largely to get around the problem of duplicates appearing in the output:
+if image A has duplicates B and C, I don't want B to be output later with A and C, and then C with A and B.
+
+This is really just a 'get it working' release, so I'll be sorting that out next.  If you want to submit a pull request, I'd very much
+appreciate it.
+
 ## Background
 
 Originally writen in Clojure with core/async, I've translated the most recent versions to Rust.
