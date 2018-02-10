@@ -68,29 +68,3 @@ cleanup:
 
   return return_code;
 }
-
-
-int ifp_is_similar(const char *fp1, size_t fp1len, const char *fp2, size_t fp2len, int tolerance)
-{
-  int return_value = 0;
-  
-  if ( fp1len != fp2len ) {
-    return 0;
-  }
-
-  if ( tolerance == 0 )
-  {
-    const char *fp = fp1, *sp = fp2;
-    while ( fp < &fp1[fp1len] ) if (*fp++ != *sp++) return 0;
-    return_value = 1;
-  }
-  else
-  {
-    int error = 0;
-    int cutoff = fp1len * tolerance;
-    const char *fp = fp1, *sp = fp2;
-    while ( fp < &fp1[fp1len] && error < cutoff ) error += abs(*fp++ - *sp++);
-    return_value = error < cutoff;
-  }
-  return return_value;
-}
