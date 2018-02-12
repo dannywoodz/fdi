@@ -8,64 +8,14 @@ extern crate getopts;
 use rayon::prelude::*;
 
 use std::env;
-use std::ffi::CString;
-use std::os::raw::c_char;
 use std::collections::{HashMap,HashSet};
 use std::sync::{Mutex,Arc};
 use getopts::{Options,Fail};
 use walkdir::{DirEntry, WalkDir};
 use regex::Regex;
 
-struct Fingerprint {
-    path: String,
-    fingerprint: [u8;48],
-    error: bool,
-}
-
-
-#[link(name = "fdi")]
-extern {
-    fn fdi_init();
-    fn fdi_fingerprint(filename: *const c_char, fingerprint: *mut c_char) -> i32;
-}
-
-impl std::cmp::PartialEq for Fingerprint {
-    fn eq(&self, other: &Fingerprint) -> bool {
-        self.path == other.path
-    }
-}
-
-fn fingerprint(entry: &DirEntry) -> Option<Fingerprint> {
-    match entry.path().to_str() {
-        Some(filename) => {
-            let mut buffer = [0 as u8;48];
-            let c_filename = CString::new(filename).unwrap();
-            let result = unsafe {
-                fdi_fingerprint(c_filename.as_ptr(), buffer.as_mut_ptr() as *mut c_char)
-            };
-            Some(Fingerprint{
-                path: filename.to_owned(),
-                fingerprint: buffer,
-                error: result < 0,
-            })
-        },
-        None => None
-    }
-}
-
-impl Fingerprint {
-    fn is_similar(&self, o: &Fingerprint, tolerance: u32) -> bool {
-        let mut error = 0;
-        let cutoff = self.fingerprint.len() as u32 * tolerance;
-        for it in self.fingerprint.iter().zip(o.fingerprint.iter()) {
-            let (v1, v2) = it;
-            let v1 = *v1 as i32;
-            let v2 = *v2 as i32;
-            error = error + (v1 - v2).abs() as u32;
-        }
-        error < cutoff
-    }
-}
+mod fingerprint;
+use fingerprint as fp;
 
 fn usage(prog_name: &str, opts: &Options, err: Option<Fail>, exit_code: i32) -> ! {
     let brief = format!("Usage: {} [--threshold=5] dir-1 [..dir-n]", prog_name);
@@ -111,10 +61,6 @@ fn main() {
         }
     };
 
-    unsafe {
-        fdi_init();
-    }
-
     let entries : Vec<DirEntry> = directories.iter()
         .flat_map(|directory| {
             WalkDir::new(directory).into_iter()
@@ -124,18 +70,17 @@ fn main() {
         })
         .collect();
 
-    let prints : Vec<Fingerprint> = entries.par_iter()
-        .map(|e| fingerprint(&e))
+    let prints : Vec<fp::Fingerprint> = entries.par_iter()
+        .map(|e| fp::Fingerprint::load(&e))
         .filter(|o| o.is_some())
         .map(|o| o.unwrap())
         .collect();
-    let pref = &prints;
 
     let similar : Arc<Mutex<HashMap<String,Vec<String>>>> = Arc::new(Mutex::new(HashMap::new()));
     let view = similar.clone();
 
-    prints.par_iter().for_each(move |print| {
-        for candidate in pref {
+    prints.par_iter().for_each(|print| {
+        for candidate in &prints {
                 if !candidate.error && candidate != print {
                     if print.is_similar(&candidate, threshold) {
                         let mut map = view.lock().unwrap();
