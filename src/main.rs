@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate log;
+extern crate log4rs;
 extern crate walkdir;
 extern crate rayon;
 extern crate regex;
@@ -14,8 +17,22 @@ use getopts::{Options,Fail};
 use walkdir::{DirEntry, WalkDir};
 use regex::Regex;
 
+use log::LevelFilter;
+use log4rs::append::console::ConsoleAppender;
+use log4rs::config::{Appender, Config, Root};
+
 mod fingerprint;
 use fingerprint as fp;
+
+fn log_init(level: LevelFilter) {
+    let stdout = ConsoleAppender::builder().build();
+    let config = Config::builder()
+        .appender(Appender::builder().build("stdout", Box::new(stdout)))
+        .build(Root::builder().appender("stdout").build(level))
+        .unwrap();
+
+    log4rs::init_config(config).unwrap();
+}
 
 fn usage(prog_name: &str, opts: &Options, err: Option<Fail>, exit_code: i32) -> ! {
     let brief = format!("Usage: {} [--threshold=5] dir-1 [..dir-n]", prog_name);
@@ -31,10 +48,20 @@ fn main() {
     let args : Vec<String> = env::args().collect();
     let mut opts = Options::new();
     opts.optopt("t", "threshold", "threshold for determining image similarity (default=5)", "INTEGER");
+    opts.optflag("d", "debug", "set loger to DEBUG level");
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(f) => usage(&args[0], &opts, Some(f), -1)
     };
+
+    let log_level = if matches.opt_present("d") {
+        LevelFilter::Debug
+    } else {
+        LevelFilter::Info
+    };
+
+    log_init(log_level);
+    
     let directories = &matches.free;
 
     if directories.is_empty() {
@@ -63,6 +90,7 @@ fn main() {
 
     let entries : Vec<DirEntry> = directories.iter()
         .flat_map(|directory| {
+            info!("Scanning {}", directory);
             WalkDir::new(directory).into_iter()
                 .filter_entry(|e| !is_hidden(e) && (e.path().is_dir()) || is_image_file(e))
                 .map(|r| r.ok().unwrap())
@@ -70,15 +98,19 @@ fn main() {
         })
         .collect();
 
+    info!("Building fingerprint set for {} images", entries.len());
+    
     let prints : Vec<fp::Fingerprint> = entries.par_iter()
         .map(|e| fp::Fingerprint::load(&e))
         .filter(|o| o.is_some())
         .map(|o| o.unwrap())
         .collect();
 
-    let similar : Arc<Mutex<HashMap<String,Vec<String>>>> = Arc::new(Mutex::new(HashMap::new()));
+    let similar = Arc::new(Mutex::new(HashMap::new()));
     let view = similar.clone();
 
+    info!("Grouping fingerprints by similarity");
+    
     prints.par_iter().for_each(|print| {
         for candidate in &prints {
                 if !candidate.error && candidate != print {
