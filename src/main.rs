@@ -11,7 +11,7 @@ extern crate getopts;
 use rayon::prelude::*;
 
 use std::env;
-use std::collections::{HashMap,HashSet};
+use std::collections::HashMap;
 use std::sync::{Mutex,Arc};
 use getopts::{Options,Fail};
 use walkdir::{DirEntry, WalkDir};
@@ -111,9 +111,9 @@ fn main() {
 
     info!("Grouping fingerprints by similarity");
     
-    prints.par_iter().for_each(|print| {
-        for candidate in &prints {
-                if !candidate.error && candidate != print {
+    prints.par_iter().enumerate().for_each(|(idx,print)| {
+        for candidate in &prints[idx + 1 ..] {
+                if !candidate.error {
                     if print.is_similar(&candidate, threshold) {
                         let mut map = view.lock().unwrap();
                         if !map.contains_key(&print.path) {
@@ -126,27 +126,17 @@ fn main() {
         }
     });
 
-    let similar = {
-        let mut similar = similar.lock().unwrap();
-        let mut keys : HashSet<String> = HashSet::new();
-        for (_key,bucket) in similar.iter_mut() {
-            bucket.retain(|s| !keys.contains(s));
-            for k in bucket {
-                keys.insert(k.clone());
-            }
-        }
-        similar
-    };
+    let similar = similar.lock().unwrap();
+
+    info!("Generating report");
 
     similar.iter()
-        .filter(|entry| {
-            let &(_, similars) = entry;
-            similars.len() > 1
-        })
         .for_each(|entry| {
             let (path, similars) = entry;
             print!("{}", path);
             similars.iter().for_each(|p| { print!("\t{}", p); });
             println!();
         });
+
+    info!("Done");
 }
