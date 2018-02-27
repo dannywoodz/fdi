@@ -26,7 +26,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <openssl/sha.h>
 #include <MagickWand/MagickWand.h>
 
 
