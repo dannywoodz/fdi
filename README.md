@@ -17,11 +17,7 @@ Once the analysis is complete, the 'candidate sets' are output to standard outpu
 ## Building
 
 `fdi` uses ImageMagick to do the heavy lifting of loading images and generating fingerprints.  `src/fdi.c` provides the functions
-necessary to do this, and `build.rs` is responsible for building and linking.  If you have a different version of ImageMagick to
-hand, you may need to alter `build.rs`, at least until I get around to auto-detecting what's available.  The output of
-`pkg-config --cflags --libs ImageMagick` should give you what you need.
-
-Aside from that minor niggle, `cargo build` handle everything else.
+necessary to do this, and `build.rs` is responsible for building and linking.  You'll need ImageMagick 7 (with its development headers), a C compiler, and `pkg-config`.  Basically, if `pkg-config --cflags --libs MagickWand` works and points to an ImageMagick 7 install, you're good to go with `cargo build`.
 
 ## TODOs
 
