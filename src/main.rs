@@ -101,7 +101,7 @@ fn main() {
             WalkDir::new(directory)
                 .into_iter()
                 .filter_entry(|e| !is_hidden(e) && (e.path().is_dir()) || is_image_file(e))
-                .map(|r| r.ok().unwrap())
+                .filter_map(|r| r.ok())
                 .filter(|e| !e.path().is_dir())
         })
         .collect();
@@ -110,9 +110,7 @@ fn main() {
 
     let prints: Vec<fp::Fingerprint> = entries
         .par_iter()
-        .map(|e| fp::Fingerprint::load(&e))
-        .filter(|o| o.is_some())
-        .map(|o| o.unwrap())
+        .filter_map(|e| fp::Fingerprint::load(&e))
         .collect();
 
     let similar = Arc::new(Mutex::new(HashMap::new()));
