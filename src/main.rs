@@ -1,8 +1,8 @@
-#[macro_use]
-extern crate log;
 extern crate getopts;
 extern crate libc;
 extern crate log4rs;
+#[macro_use]
+extern crate log;
 extern crate rayon;
 extern crate regex;
 extern crate walkdir;
@@ -101,7 +101,7 @@ fn main() {
             WalkDir::new(directory)
                 .into_iter()
                 .filter_entry(|e| !is_hidden(e) && (e.path().is_dir()) || is_image_file(e))
-                .map(|r| r.ok().unwrap())
+                .filter_map(|r| r.ok())
                 .filter(|e| !e.path().is_dir())
         })
         .collect();

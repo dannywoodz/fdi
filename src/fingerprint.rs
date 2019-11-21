@@ -31,14 +31,13 @@ impl Fingerprint {
     }
 
     fn difference(&self, o: &Fingerprint) -> u32 {
-        let mut error = 0;
-        for it in self.fingerprint.iter().zip(o.fingerprint.iter()) {
-            let (v1, v2) = it;
-            let v1 = *v1 as i32;
-            let v2 = *v2 as i32;
-            error = error + (v1 - v2).abs() as u32;
-        }
-        error
+        return self
+            .fingerprint
+            .iter()
+            .zip(o.fingerprint.iter())
+            .fold(0, |error, (v1, v2)| {
+                return error + (*v1 as i32 - *v2 as i32).abs() as u32;
+            });
     }
 
     pub fn load(entry: &DirEntry) -> Option<Fingerprint> {
