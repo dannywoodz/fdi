@@ -5,7 +5,7 @@ authors = ["Danny Woods <dannywoodz@yahoo.co.uk>"]
 
 [build-dependencies]
 pkg-config = "0.3.9"
-cc = "1.0.4"
+cc = "1.0"
 
 [dependencies]
 walkdir = "2"
