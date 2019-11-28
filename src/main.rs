@@ -131,21 +131,10 @@ fn main() {
     let view = similar.clone();
 
     info!("Grouping fingerprints by similarity");
-    let count = Mutex::new(0 as u32);
-    let report_threshold = 1000;
 
     prints.par_iter().enumerate().for_each(|(idx, print)| {
         for candidate in &prints[idx + 1..] {
             if !candidate.error {
-                let count = {
-                    let mut holder = count.lock().unwrap();
-                    let count = *holder;
-                    *holder += 1;
-                    count
-                };
-                if count % report_threshold == report_threshold - 1 {
-                    info!("Processed {} of {} images", report_threshold, prints.len());
-                }
                 if print.is_similar(&candidate, threshold) {
                     let mut map = view.lock().unwrap();
                     if !map.contains_key(&print.path) {
